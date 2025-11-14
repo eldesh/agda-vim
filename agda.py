@@ -2,7 +2,9 @@ import vim
 import re
 import subprocess
 from functools import wraps
+from sys import version_info
 
+python_cmd = 'py' if version_info.major == 2 else 'py3'
 
 def vim_func(vim_fname_or_func=None, conv=None):
     '''Expose a python function to vim, optionally overriding its name.'''
@@ -32,9 +34,10 @@ def vim_func(vim_fname_or_func=None, conv=None):
 
         vim.command('''
             function! {vim_fname}({vim_params})
-                py {fname}.from_vim(vim.eval(\'a:\'))
+                {python_cmd} {fname}.from_vim(vim.eval(\'a:\'))
             endfunction
         '''.format(
+            python_cmd=python_cmd,
             vim_fname=vim_fname,
             vim_params=', '.join(arg_names),
             fname=fname,
