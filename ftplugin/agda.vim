@@ -153,11 +153,10 @@ let b:undo_ftplugin .= ' | setlocal matchpairs<'
 " under Python 3, but it won't match up the holes correctly if you have
 " Unicode characters.
 function! s:UsingPython2()
+  if has('python3')
+    return 0
+  endif
   return 1
-  "if has('python')
-  "  return 1
-  "endif
-  "return 0
 endfunction
 
 let s:using_python2 = s:UsingPython2()
