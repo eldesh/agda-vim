@@ -163,7 +163,7 @@ let s:using_python2 = s:UsingPython2()
 let s:python_cmd = s:using_python2 ? 'py ' : 'py3 '
 let s:python_loadfile = s:using_python2 ? 'pyfile ' : 'py3file '
 
-if has('python') " || has('python3')
+if has('python') || has('python3')
 
 function! s:LogAgda(name, text, append)
     let agdawinnr = bufwinnr('__Agda__')

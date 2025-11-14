@@ -8,11 +8,10 @@ def vim_func(vim_fname_or_func=None, conv=None):
     '''Expose a python function to vim, optionally overriding its name.'''
 
     def wrap_func(func, vim_fname, conv):
-        fname = func.func_name
+        fname = func.__name__
         vim_fname = vim_fname or fname
-
-        arg_names = func.func_code.co_varnames[:func.func_code.co_argcount]
-        arg_defaults = dict(zip(arg_names[:-len(func.func_defaults or ()):], func.func_defaults or []))
+        arg_names = func.__code__.co_varnames[:func.__code__.co_argcount]
+        arg_defaults = dict(zip(arg_names[:-len(func.__defaults__ or ()):], func.__defaults__ or []))
 
         @wraps(func)
         def from_vim(vim_arg_dict):
