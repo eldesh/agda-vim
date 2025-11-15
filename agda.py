@@ -5,10 +5,14 @@ from functools import wraps
 from sys import version_info
 import logging as log
 
+AGDA_DEBUG = False
+
 python_cmd = 'py' if version_info.major == 2 else 'py3'
 
 logger = log.getLogger(__name__)
-log.basicConfig(level=log.DEBUG)
+if AGDA_DEBUG:
+    log.basicConfig(level=log.DEBUG)
+
 
 def vim_func(vim_fname_or_func=None, conv=None):
     '''Expose a python function to vim, optionally overriding its name.'''
