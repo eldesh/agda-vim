@@ -3,8 +3,12 @@ import re
 import subprocess
 from functools import wraps
 from sys import version_info
+import logging as log
 
 python_cmd = 'py' if version_info.major == 2 else 'py3'
+
+logger = log.getLogger(__name__)
+log.basicConfig(level=log.DEBUG)
 
 def vim_func(vim_fname_or_func=None, conv=None):
     '''Expose a python function to vim, optionally overriding its name.'''
@@ -102,18 +106,23 @@ def AgdaRestart():
 def findGoals(goalList):
     global goals
 
+    logger.debug("findGoals(%s)" % goalList)
     vim.command('syn sync fromstart') # TODO: This should become obsolete given good sync rules in the syntax file.
 
     goals = {}
     lines = vim.current.buffer
     row = 1
     agdaHolehlID = vim.eval('hlID("agdaHole")')
+    logger.debug("lines: %s" % lines)
+    logger.debug("agdaHolehlID: %s" % agdaHolehlID)
     for line in lines:
 
         start = 0
         while start != -1:
             qstart = line.find("?", start)
+            logger.debug("qstart: %d" % qstart)
             hstart = line.find("{!", start)
+            logger.debug("hstart: %d" % hstart)
             if qstart == -1:
                 start = hstart
             elif hstart == -1:
@@ -136,14 +145,17 @@ def findGoal(row, col):
     for item in goals.items():
         if item[1][0] == row and item[1][1] == col:
             return item[0]
+    logger.debug('findGoal (not found) in %s: (%d,%d)' % (goals, row, col))
     return None
 
 def getOutput():
     line = agda.stdout.readline()[7:] # get rid of the "Agda2> " prompt
+    logger.debug('getOutput: %s' % line)
     lines = []
     while not line.startswith('Agda2> cannot read') and line != "":
         lines.append(line)
         line = agda.stdout.readline()
+    logger.debug('getOutput: lines: %s' % lines)
     return lines
 
 def parseVersion(versionString):
@@ -160,11 +172,13 @@ def parseAnnotation(spans):
     global annotations
     anns = re.findall(r'\((\d+) (\d+) \([^\)]*\) \w+ \(\"([^"]*)\" \. (\d+)\)\)', spans)
     # TODO: This is assumed to be in sorted order.
+    logger.debug('parseAnnotation: %s' % anns)
     for ann in anns:
         annotations.append([c2b(int(ann[0])-1), c2b(int(ann[1])-1), ann[2], c2b(int(ann[3]))])
 
 def searchAnnotation(lo, hi, idx):
     global annotations
+    logger.debug('searchAnnotation: annotations=%s lo=%d hi=%d idx=%d' % (annotations, lo, hi, idx))
 
     if hi == 0: return None
 
@@ -269,8 +283,10 @@ def interpretResponse(responses, quiet = False):
 def sendCommand(arg, quiet=False):
     vim.command('silent! write')
     f = vim.current.buffer.name
+    logger.debug('sendCommand(%s)' % f)
     # The x is a really hacky way of getting a consistent final response.  Namely, "cannot read"
     agda.stdin.write('IOTCM "%s" None Direct (%s)\nx\n' % (escape(f), arg))
+    logger.debug('IOTCM "%s" None Direct (%s)\nx\n' % (escape(f), arg))
     interpretResponse(getOutput(), quiet)
 
 def sendCommandLoadHighlightInfo(file, quiet):
@@ -282,6 +298,7 @@ def sendCommandLoad(file, quiet):
         incpaths_str = ",".join(map(lambda x: x.decode('utf-8'), vim.vars['agdavim_agda_includepathlist']))
     else:
         incpaths_str = "\"-i\"," + ",\"-i\",".join(map(lambda x: x.decode('utf-8'), vim.vars['agdavim_agda_includepathlist']))
+    logger.debug('Cmd_load "%s" [%s]' % (escape(file), incpaths_str))
     sendCommand('Cmd_load "%s" [%s]' % (escape(file), incpaths_str), quiet = quiet)
 
 #def getIdentifierAtCursor():
@@ -313,7 +330,9 @@ def replaceHole(replacement):
 
 def getHoleBodyAtCursor():
     (r, c) = vim.current.window.cursor
+    logger.debug('getHoleBodyAtCursor: (%s,%s)' % (r, c))
     line = vim.current.line
+    logger.debug('getHoleBodyAtCursor: %s' % line)
     try:
         if line[c] == "?":
             return ("?", findGoal(r, c+1))
@@ -406,15 +425,19 @@ def AgdaRefine(unfoldAbstract):
 
 @vim_func
 def AgdaAuto():
+    logger.debug("AgdaAuto")
     result = getHoleBodyAtCursor()
+    logger.debug(f"AgdaAuto: {result}")
     if result is None:
         print("No hole under the cursor")
     elif result[1] is None:
         print("Goal not loaded")
     else:
         if agdaVersion < [2,6,0,0]:
+            logger.debug('Cmd_auto: %d noRange "%s"' % (result[1], escape(result[0]) if result[0] != "?" else ""))
             sendCommand('Cmd_auto %d noRange "%s"' % (result[1], escape(result[0]) if result[0] != "?" else ""))
         else:
+            logger.debug('Cmd_autoOne: %d noRange "%s"' % (result[1], escape(result[0]) if result[0] != "?" else ""))
             sendCommand('Cmd_autoOne %d noRange "%s"' % (result[1], escape(result[0]) if result[0] != "?" else ""))
 
 
