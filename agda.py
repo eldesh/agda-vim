@@ -493,6 +493,15 @@ def AgdaWhyInScope(termName):
 
 
 @vim_func
+def AgdaMetas(mode):
+    if mode not in ["AsIs", "Normalised", "Simplified", "HeadNormal", "Instantiated"]:
+        rewriteMode = "Normalised"
+    else:
+        rewriteMode = mode
+    sendCommand('Cmd_metas %s' % rewriteMode)
+
+
+@vim_func
 def AgdaShowModule(moduleName):
     result = getHoleBodyAtCursor() if moduleName == '' else None
 

@@ -233,7 +233,7 @@ command! -buffer -nargs=0 AgdaShowImplicitArguments exec s:python_cmd "sendComma
 command! -buffer -nargs=0 AgdaHideImplicitArguments exec s:python_cmd "sendCommand('ShowImplicitArgs False')"
 command! -buffer -nargs=0 AgdaToggleImplicitArguments exec s:python_cmd "sendCommand('ToggleImplicitArgs')"
 command! -buffer -nargs=0 AgdaConstraints exec s:python_cmd "sendCommand('Cmd_constraints')"
-command! -buffer -nargs=0 AgdaMetas exec s:python_cmd "sendCommand('Cmd_metas')"
+command! -buffer -nargs=? AgdaMetas call AgdaMetas(<q-args>)
 command! -buffer -nargs=0 AgdaSolveAll exec s:python_cmd "sendCommand('Cmd_solveAll')"
 command! -buffer -nargs=1 AgdaShowModule call AgdaShowModule(<args>)
 command! -buffer -nargs=1 AgdaWhyInScope call AgdaWhyInScope(<args>)
@@ -258,7 +258,7 @@ nnoremap <buffer> <LocalLeader>M :call AgdaShowModule('')<CR>
 nnoremap <buffer> <LocalLeader>y :call AgdaWhyInScope('')<CR>
 nnoremap <buffer> <LocalLeader>h :call AgdaHelperFunction()<CR>
 nnoremap <buffer> <LocalLeader>d :call AgdaGotoAnnotation()<CR>
-nnoremap <buffer> <LocalLeader>m :AgdaMetas<CR>
+nnoremap <buffer> <LocalLeader>m :call AgdaMetas('')<CR>
 
 " Show/reload metas
 nnoremap <buffer> <C-e> :AgdaMetas<CR>
