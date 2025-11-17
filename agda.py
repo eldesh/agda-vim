@@ -497,8 +497,10 @@ def AgdaWhyInScope(termName):
 
 
 @vim_func
-def AgdaMetas(mode):
-    if mode not in ["AsIs", "Normalised", "Simplified", "HeadNormal", "Instantiated"]:
+def AgdaMetas(mode = None):
+    if mode is None:
+        rewriteMode = "Normalised"
+    elif mode not in ["AsIs", "Normalised", "Simplified", "HeadNormal", "Instantiated"]:
         rewriteMode = "Normalised"
     else:
         rewriteMode = mode

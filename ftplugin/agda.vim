@@ -258,7 +258,7 @@ nnoremap <buffer> <LocalLeader>M :call AgdaShowModule('')<CR>
 nnoremap <buffer> <LocalLeader>y :call AgdaWhyInScope('')<CR>
 nnoremap <buffer> <LocalLeader>h :call AgdaHelperFunction()<CR>
 nnoremap <buffer> <LocalLeader>d :call AgdaGotoAnnotation()<CR>
-nnoremap <buffer> <LocalLeader>m :call AgdaMetas('')<CR>
+nnoremap <buffer> <LocalLeader>m :AgdaMetas<CR>
 
 " Show/reload metas
 nnoremap <buffer> <C-e> :AgdaMetas<CR>
