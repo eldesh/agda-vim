@@ -32,6 +32,7 @@ class AgdaVersion:
 
     @classmethod
     def parse(cls, text: str) -> 'AgdaVersion':
+        """Parse an Agda version string of the form 'Agda version X.Y.Z.W-ABC'."""
         agdaVersion = [int(c) for c in text[12:].split("-")[0].split('.')]
         agdaVersion = agdaVersion + [0]*max(0, 4-len(agdaVersion))
         return AgdaVersion(*agdaVersion)
