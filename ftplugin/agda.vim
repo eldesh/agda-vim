@@ -25,7 +25,7 @@ function! AgdaLoad(quiet)
     " Do nothing.  Overidden below with a Python function if python is supported.
 endfunction
 
-autocmd QuickfixCmdPost make call AgdaReloadSyntax()|call AgdaVersion(v:true)|call AgdaLoad(v:true)
+autocmd QuickfixCmdPost make call AgdaReloadSyntax()|call AgdaShowVersion(v:true)|call AgdaLoad(v:true)
 
 setlocal autowrite
 let b:undo_ftplugin .= ' | setlocal autowrite<'
@@ -226,7 +226,7 @@ endfunction
 execute s:python_loadfile . resolve(expand('<sfile>:p:h') . '/../agda.py')
 
 command! -buffer -nargs=0 AgdaLoad call AgdaLoad(v:false)
-command! -buffer -nargs=0 AgdaVersion call AgdaVersion(v:false)
+command! -buffer -nargs=0 AgdaShowVersion call AgdaShowVersion(v:false)
 command! -buffer -nargs=0 AgdaReload silent! make!|redraw!
 command! -buffer -nargs=0 AgdaRestartAgda exec s:python_cmd 'AgdaRestart()'
 command! -buffer -nargs=0 AgdaShowImplicitArguments exec s:python_cmd "sendCommand('ShowImplicitArgs True')"

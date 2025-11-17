@@ -440,7 +440,7 @@ def getWordAtCursor():
 ## Directly exposed functions: {
 
 @vim_func(conv={'quiet': vim_bool})
-def AgdaVersion(quiet):
+def AgdaShowVersion(quiet):
     sendCommand('Cmd_show_version', quiet=quiet)
 
 
