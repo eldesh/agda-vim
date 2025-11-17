@@ -304,6 +304,7 @@ def interpretResponse(responses, quiet = False):
             if quiet and '*Error*' in response: vim.command('cwindow')
             strings = re.findall(r'"((?:[^"\\]|\\.)*)"', response[19:])
             if strings[0] == '*Agda Version*':
+                logger.debug('AgdaVersion: %s' % strings[1])
                 agdaVersion = AgdaVersion.parse(strings[1])
             if quiet: continue
             vim.command('call s:LogAgda("%s","%s","%s")'% (strings[0], strings[1], response.endswith('t)')))
