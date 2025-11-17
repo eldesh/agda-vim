@@ -1,18 +1,47 @@
 import vim
 import re
+import os
 import subprocess
 from functools import wraps
 from sys import version_info
-import logging as log
-
-AGDA_DEBUG = False
+import logging
 
 python_cmd = 'py' if version_info.major == 2 else 'py3'
 
-logger = log.getLogger(__name__)
-if AGDA_DEBUG:
-    log.basicConfig(level=log.DEBUG)
+def logging_level_from_str(x):
+    if x is None:
+        return None
+    try:
+        return int(x)
+    except ValueError:
+        return getattr(logging, x, None)
 
+
+def logging_level_from(x):
+    return logging_level_from_str(x.decode('utf-8') if isinstance(x, bytes) else x)
+
+
+def get_logging_level():
+    """
+    Obtain and configure this module's logger.
+
+    Logging level precedence:
+      1) Vim script variable g:agdavim_logging_level (e.g., 10, 'DEBUG', 'INFO').
+      2) Environment variable AGDAVIM_LOGGING_LEVEL (e.g., 10, 'DEBUG', 'INFO').
+      3) logging.WARNING if neither is set
+
+    Returns:
+        logging.Logger: the configured logger.
+    """
+    level = (
+        logging_level_from(vim.vars.get('agdavim_logging_level')) or
+        logging_level_from(os.getenv('AGDAVIM_LOGGING_LEVEL')) or
+        logging.WARNING
+    )
+    return level
+
+logger = logging.getLogger(__name__)
+logger.setLevel(get_logging_level())
 
 def vim_func(vim_fname_or_func=None, conv=None):
     '''Expose a python function to vim, optionally overriding its name.'''
@@ -542,5 +571,9 @@ def AgdaHelperFunction():
     else:
         sendCommand('Cmd_helper_function %s %d noRange "%s"' % (rewriteMode, result[1], escape(result[0])))
 
+@vim_func
+def AgdaVimSetLoggingLevel():
+    level = get_logging_level()
+    logger.setLevel(level)
 
 ## }

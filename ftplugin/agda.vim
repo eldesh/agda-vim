@@ -243,6 +243,7 @@ command! -buffer -nargs=0 AgdaSetRewriteModeNormalised exec s:python_cmd "setRew
 command! -buffer -nargs=0 AgdaSetRewriteModeSimplified exec s:python_cmd "setRewriteMode('Simplified')"
 command! -buffer -nargs=0 AgdaSetRewriteModeHeadNormal exec s:python_cmd "setRewriteMode('HeadNormal')"
 command! -buffer -nargs=0 AgdaSetRewriteModeInstantiated exec s:python_cmd "setRewriteMode('Instantiated')"
+command! -buffer -nargs=0 AgdaVimSetLoggingLevel call AgdaVimSetLoggingLevel()
 
 nnoremap <buffer> <LocalLeader>l :AgdaReload<CR>
 nnoremap <buffer> <LocalLeader>t :call AgdaInfer()<CR>
@@ -272,6 +273,7 @@ nnoremap <buffer> <silent> <C-y>  2h:let _s=@/<CR>? {!\\| \?<CR>:let @/=_s<CR>2l
 inoremap <buffer> <silent> <C-y>  <C-o>2h<C-o>:let _s=@/<CR><C-o>? {!\\| \?<CR><C-o>:let @/=_s<CR><C-o>2l
 
 AgdaReload
+AgdaVimSetLoggingLevel
 
 endif
 
