@@ -1,10 +1,40 @@
 import vim
 import re
 import os
+from functools import total_ordering
 import subprocess
 from functools import wraps
 from sys import version_info
 import logging
+
+@total_ordering
+class AgdaVersion:
+    _major: int
+    _minor: int
+    _patch: int
+    _build: int
+
+    def __init__(self, major, minor, patch, build):
+        self._major = major
+        self._minor = minor
+        self._patch = patch
+        self._build = build
+
+    def __eq__(self, other) -> bool:
+        return (self._major, self._minor, self._patch, self._build) == (other._major, other._minor, other._patch, other._build)
+
+    def __lt__(self, other) -> bool:
+        return (self._major, self._minor, self._patch, self._build) < (other._major, other._minor, other._patch, other._build)
+
+    def __str__(self) -> str:
+        return f"{self._major}.{self._minor}.{self._patch}.{self._build}"
+
+    @classmethod
+    def parse(cls, text: str) -> 'AgdaVersion':
+        agdaVersion = [int(c) for c in text[12:].split("-")[0].split('.')]
+        agdaVersion = agdaVersion + [0]*max(0, 4-len(agdaVersion))
+        return AgdaVersion(*agdaVersion)
+
 
 python_cmd = 'py' if version_info.major == 2 else 'py3'
 
@@ -108,7 +138,7 @@ agda = subprocess.Popen(["agda", "--interaction"], bufsize = 1, stdin = subproce
 goals = {}
 annotations = []
 
-agdaVersion = [0,0,0,0]
+agdaVersion = AgdaVersion(0, 0, 0, 0)
 
 rewriteMode = "Normalised"
 
@@ -193,11 +223,6 @@ def getOutput():
     logger.debug('getOutput: lines: %s' % lines)
     return lines
 
-def parseVersion(versionString):
-    global agdaVersion
-    agdaVersion = [int(c) for c in versionString[12:].split("-")[0].split('.')]
-    agdaVersion = agdaVersion + [0]*max(0, 4-len(agdaVersion))
-
 # This is not very efficient presumably.
 def c2b(n):
     return int(vim.eval('byteidx(join(getline(1, "$"), "\n"),%d)' % n))
@@ -248,12 +273,13 @@ def gotoAnnotation():
     vim.command('%dgo' % pos)
 
 def interpretResponse(responses, quiet = False):
+    global agdaVersion
     for response in responses:
         if response.startswith('(agda2-info-action ') or response.startswith('(agda2-info-action-and-copy '):
             if quiet and '*Error*' in response: vim.command('cwindow')
             strings = re.findall(r'"((?:[^"\\]|\\.)*)"', response[19:])
             if strings[0] == '*Agda Version*':
-                parseVersion(strings[1])
+                agdaVersion = AgdaVersion.parse(strings[1])
             if quiet: continue
             vim.command('call s:LogAgda("%s","%s","%s")'% (strings[0], strings[1], response.endswith('t)')))
         elif "(agda2-goals-action '" in response:
@@ -329,7 +355,7 @@ def sendCommandLoadHighlightInfo(file, quiet):
 
 def sendCommandLoad(file, quiet):
     global agdaVersion
-    if agdaVersion < [2,5,0,0]: # in 2.5 they changed it so Cmd_load takes commandline arguments
+    if agdaVersion < AgdaVersion(2,5,0,0): # in 2.5 they changed it so Cmd_load takes commandline arguments
         incpaths_str = ",".join(map(lambda x: x.decode('utf-8'), vim.vars['agdavim_agda_includepathlist']))
     else:
         incpaths_str = "\"-i\"," + ",\"-i\",".join(map(lambda x: x.decode('utf-8'), vim.vars['agdavim_agda_includepathlist']))
@@ -417,7 +443,7 @@ def AgdaGotoAnnotation():
 def AgdaGive():
     result = getHoleBodyAtCursor()
 
-    if agdaVersion < [2,5,3,0]:
+    if agdaVersion < AgdaVersion(2,5,3,0):
         useForce = ""
     else:
         useForce = "WithoutForce" # or WithForce
@@ -464,7 +490,7 @@ def AgdaAuto():
     elif result[1] is None:
         print("Goal not loaded")
     else:
-        if agdaVersion < [2,6,0,0]:
+        if agdaVersion < AgdaVersion(2,6,0,0):
             sendCommand('Cmd_auto %d noRange "%s"' % (result[1], escape(result[0]) if result[0] != "?" else ""))
         else:
             sendCommand('Cmd_autoOne %d noRange "%s"' % (result[1], escape(result[0]) if result[0] != "?" else ""))
@@ -495,7 +521,7 @@ def AgdaInfer():
 # As of 2.5.2, the options are "DefaultCompute", "IgnoreAbstract", "UseShowInstance"
 @vim_func
 def AgdaNormalize(unfoldAbstract):
-    if agdaVersion < [2,5,2,0]:
+    if agdaVersion < AgdaVersion(2,5,2,0):
         unfoldAbstract = str(unfoldAbstract == "DefaultCompute")
 
     result = getHoleBodyAtCursor()
@@ -536,7 +562,7 @@ def AgdaMetas(mode = None):
 def AgdaShowModule(moduleName):
     result = getHoleBodyAtCursor() if moduleName == '' else None
 
-    if agdaVersion < [2,4,2,0]:
+    if agdaVersion < AgdaVersion(2,4,2,0):
         if result is None:
             moduleName = promptUser("Enter module name: ") if moduleName == '' else moduleName
             sendCommand('Cmd_show_module_contents_toplevel "%s"' % escape(moduleName))
