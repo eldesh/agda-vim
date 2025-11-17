@@ -6,6 +6,7 @@ import subprocess
 from functools import wraps
 from sys import version_info
 import logging
+from enum import Enum, unique
 
 @total_ordering
 class AgdaVersion:
@@ -34,6 +35,30 @@ class AgdaVersion:
         agdaVersion = [int(c) for c in text[12:].split("-")[0].split('.')]
         agdaVersion = agdaVersion + [0]*max(0, 4-len(agdaVersion))
         return AgdaVersion(*agdaVersion)
+
+
+@unique
+class RewriteMode(Enum):
+    AsIs = "AsIs"
+    Normalised = "Normalised"
+    Simplified = "Simplified"
+    HeadNormal = "HeadNormal"
+    Instantiated = "Instantiated"
+
+    @classmethod
+    def parse(cls, text: str) -> 'RewriteMode':
+        if cls.AsIs.value == text:
+            return cls.AsIs
+        elif cls.Normalised.value == text:
+            return cls.Normalised
+        elif cls.Simplified.value == text:
+            return cls.Simplified
+        elif cls.HeadNormal.value == text:
+            return cls.HeadNormal
+        elif cls.Instantiated.value == text:
+            return cls.Instantiated
+        else:
+            raise ValueError("Unknown RewriteMode: %s" % text)
 
 
 python_cmd = 'py' if version_info.major == 2 else 'py3'
@@ -140,7 +165,7 @@ annotations = []
 
 agdaVersion = AgdaVersion(0, 0, 0, 0)
 
-rewriteMode = "Normalised"
+rewriteMode = RewriteMode.Normalised
 
 # This technically needs to turn a string into a Haskell escaped string, buuuut just gonna cheat.
 def escape(s):
@@ -152,11 +177,10 @@ def unescape(s):
 
 def setRewriteMode(mode):
     global rewriteMode
-    mode = mode.strip()
-    if mode not in ["AsIs", "Normalised", "Simplified", "HeadNormal", "Instantiated"]:
-        rewriteMode = "Normalised"
-    else:
-        rewriteMode = mode
+    try:
+        rewriteMode = RewriteMode.parse(mode)
+    except ValueError:
+        rewriteMode = RewriteMode.Normalised
 
 def promptUser(msg):
     vim.command('call inputsave()')
@@ -504,18 +528,18 @@ def AgdaContext():
     elif result[1] is None:
         print("Goal not loaded")
     else:
-        sendCommand('Cmd_goal_type_context_infer %s %d noRange "%s"' % (rewriteMode, result[1], escape(result[0])))
+        sendCommand('Cmd_goal_type_context_infer %s %d noRange "%s"' % (rewriteMode.value, result[1], escape(result[0])))
 
 
 @vim_func
 def AgdaInfer():
     result = getHoleBodyAtCursor()
     if result is None:
-        sendCommand('Cmd_infer_toplevel %s "%s"' % (rewriteMode, escape(promptUser("Enter expression: "))))
+        sendCommand('Cmd_infer_toplevel %s "%s"' % (rewriteMode.value, escape(promptUser("Enter expression: "))))
     elif result[1] is None:
         print("Goal not loaded")
     else:
-        sendCommand('Cmd_infer %s %d noRange "%s"' % (rewriteMode, result[1], escape(result[0])))
+        sendCommand('Cmd_infer %s %d noRange "%s"' % (rewriteMode.value, result[1], escape(result[0])))
 
 
 # As of 2.5.2, the options are "DefaultCompute", "IgnoreAbstract", "UseShowInstance"
@@ -550,12 +574,12 @@ def AgdaWhyInScope(termName):
 @vim_func
 def AgdaMetas(mode = None):
     if mode is None:
-        rewriteMode = "Normalised"
-    elif mode not in ["AsIs", "Normalised", "Simplified", "HeadNormal", "Instantiated"]:
-        rewriteMode = "Normalised"
-    else:
-        rewriteMode = mode
-    sendCommand('Cmd_metas %s' % rewriteMode)
+        rewriteMode = RewriteMode.Normalised
+    try:
+        rewriteMode = RewriteMode.parse(mode)
+    except ValueError:
+        rewriteMode = RewriteMode.Normalised
+    sendCommand('Cmd_metas %s' % rewriteMode.value)
 
 
 @vim_func
@@ -573,11 +597,11 @@ def AgdaShowModule(moduleName):
     else:
         if result is None:
             moduleName = promptUser("Enter module name: ") if moduleName == '' else moduleName
-            sendCommand('Cmd_show_module_contents_toplevel %s "%s"' % (rewriteMode, escape(moduleName)))
+            sendCommand('Cmd_show_module_contents_toplevel %s "%s"' % (rewriteMode.value, escape(moduleName)))
         elif result[1] is None:
             print("Goal not loaded")
         else:
-            sendCommand('Cmd_show_module_contents %s %d noRange "%s"' % (rewriteMode, result[1], escape(result[0])))
+            sendCommand('Cmd_show_module_contents %s %d noRange "%s"' % (rewriteMode.value, result[1], escape(result[0])))
 
 
 @vim_func
@@ -589,9 +613,9 @@ def AgdaHelperFunction():
     elif result[1] is None:
         print("Goal not loaded")
     elif result[0] == "?":
-        sendCommand('Cmd_helper_function %s %d noRange "%s"' % (rewriteMode, result[1], escape(promptUser("Enter name for helper function: "))))
+        sendCommand('Cmd_helper_function %s %d noRange "%s"' % (rewriteMode.value, result[1], escape(promptUser("Enter name for helper function: "))))
     else:
-        sendCommand('Cmd_helper_function %s %d noRange "%s"' % (rewriteMode, result[1], escape(result[0])))
+        sendCommand('Cmd_helper_function %s %d noRange "%s"' % (rewriteMode.value, result[1], escape(result[0])))
 
 @vim_func
 def AgdaVimSetLoggingLevel():
