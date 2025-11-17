@@ -8,6 +8,10 @@ import logging
 
 python_cmd = 'py' if version_info.major == 2 else 'py3'
 
+logger = logging.getLogger('agda.py')
+logging.basicConfig(level=logging.WARNING)
+logger.setLevel(logging.WARNING)
+
 def logging_level_from_str(x):
     if x is None:
         return None
@@ -40,8 +44,6 @@ def get_logging_level():
     )
     return level
 
-logger = logging.getLogger(__name__)
-logger.setLevel(get_logging_level())
 
 def vim_func(vim_fname_or_func=None, conv=None):
     '''Expose a python function to vim, optionally overriding its name.'''
@@ -146,16 +148,15 @@ def findGoals(goalList):
     lines = vim.current.buffer
     row = 1
     agdaHolehlID = vim.eval('hlID("agdaHole")')
-    logger.debug("lines: %s" % lines)
+    logger.debug("lines: %s" % "\n".join(lines))
     logger.debug("agdaHolehlID: %s" % agdaHolehlID)
     for line in lines:
 
         start = 0
         while start != -1:
             qstart = line.find("?", start)
-            logger.debug("qstart: %d" % qstart)
             hstart = line.find("{!", start)
-            logger.debug("hstart: %d" % hstart)
+            logger.debug("hstart: (%d,%d)" % (qstart, hstart))
             if qstart == -1:
                 start = hstart
             elif hstart == -1:
@@ -177,6 +178,7 @@ def findGoal(row, col):
     global goals
     for item in goals.items():
         if item[1][0] == row and item[1][1] == col:
+            logger.debug('findGoal (found) in %s: (%d,%d)' % (item, row, col))
             return item[0]
     logger.debug('findGoal (not found) in %s: (%d,%d)' % (goals, row, col))
     return None
@@ -331,7 +333,6 @@ def sendCommandLoad(file, quiet):
         incpaths_str = ",".join(map(lambda x: x.decode('utf-8'), vim.vars['agdavim_agda_includepathlist']))
     else:
         incpaths_str = "\"-i\"," + ",\"-i\",".join(map(lambda x: x.decode('utf-8'), vim.vars['agdavim_agda_includepathlist']))
-    logger.debug('Cmd_load "%s" [%s]' % (escape(file), incpaths_str))
     sendCommand('Cmd_load "%s" [%s]' % (escape(file), incpaths_str), quiet = quiet)
 
 #def getIdentifierAtCursor():
@@ -363,9 +364,8 @@ def replaceHole(replacement):
 
 def getHoleBodyAtCursor():
     (r, c) = vim.current.window.cursor
-    logger.debug('getHoleBodyAtCursor: (%s,%s)' % (r, c))
     line = vim.current.line
-    logger.debug('getHoleBodyAtCursor: %s' % line)
+    logger.debug('getHoleBodyAtCursor: (%s,%s): %s' % (r, c, line))
     try:
         if line[c] == "?":
             return ("?", findGoal(r, c+1))
@@ -458,19 +458,15 @@ def AgdaRefine(unfoldAbstract):
 
 @vim_func
 def AgdaAuto():
-    logger.debug("AgdaAuto")
     result = getHoleBodyAtCursor()
-    logger.debug(f"AgdaAuto: {result}")
     if result is None:
         print("No hole under the cursor")
     elif result[1] is None:
         print("Goal not loaded")
     else:
         if agdaVersion < [2,6,0,0]:
-            logger.debug('Cmd_auto: %d noRange "%s"' % (result[1], escape(result[0]) if result[0] != "?" else ""))
             sendCommand('Cmd_auto %d noRange "%s"' % (result[1], escape(result[0]) if result[0] != "?" else ""))
         else:
-            logger.debug('Cmd_autoOne: %d noRange "%s"' % (result[1], escape(result[0]) if result[0] != "?" else ""))
             sendCommand('Cmd_autoOne %d noRange "%s"' % (result[1], escape(result[0]) if result[0] != "?" else ""))
 
 
@@ -575,5 +571,7 @@ def AgdaHelperFunction():
 def AgdaVimSetLoggingLevel():
     level = get_logging_level()
     logger.setLevel(level)
+    logging.basicConfig(level=level)
+    print("Set logging level to %s" % logging.getLevelName(level))
 
 ## }
