@@ -433,23 +433,33 @@ def replaceHole(replacement):
 def getHoleBodyAtCursor():
     (r, c) = vim.current.window.cursor
     line = vim.current.line
+    line_bytes = line.encode('utf-8')
     logger.debug('getHoleBodyAtCursor: (%s,%s): %s' % (r, c, line))
+    logger.debug('line bytes: %d: %s' % (len(line_bytes), line_bytes))
+    linesub = line_bytes[:c].decode('utf-8')
+    linesub_len = len(linesub)
+    pos = linesub_len
+    logger.debug('linesub: %d: %s' % (linesub_len, linesub))
     try:
-        if line[c] == "?":
+        logger.debug('line[pos]: %s' % line[pos])
+        if line[pos] == "?":
             return ("?", findGoal(r, c+1))
     except IndexError:
+        logger.debug('getHoleBodyAtCursor: IndexError')
         return None
     try: # handle virtual space better
         mo = None
-        for mo in re.finditer(r"{!", line[:min(len(line),c+2)]): pass
+        for mo in re.finditer(r"{!", line[:min(len(line),pos+2)]): pass
         start = mo.start()
-        end = re.search(r"!}", line[max(0,c-1):]).end() + max(0,c-1)
+        end = re.search(r"!}", line[max(0,pos-1):]).end() + max(0,pos-1)
+        logger.debug('getHoleBodyAtCursor: %s,%d,%d,%s' % (mo, start, end, line[start:end]))
     except AttributeError:
+        logger.debug('getHoleBodyAtCursor: AttributeError')
         return None
     result = line[start+2:end-2].strip()
     if result == "":
         result = "?"
-    return (result, findGoal(r, start+1))
+    return (result, findGoal(r, len(line[:start].encode('utf-8'))+1))
 
 def getWordAtCursor():
     return vim.eval("expand('<cWORD>')").strip()
