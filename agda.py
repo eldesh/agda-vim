@@ -206,15 +206,19 @@ def findGoals(goalList):
     #logger.debug("lines: %s" % "\n".join(lines))
     logger.debug("agdaHolehlID: %s" % agdaHolehlID)
     for line in lines:
-        #logger.debug("line[%d]:%s" % (row, line))
+        line_bytes = line.encode('utf-8')
 
         start = 0
         while start != -1:
-            qstart = line.encode('utf-8').find(b"?", start)
-            hstart = line.encode('utf-8').find(b"{!", start)
+            qstart = line_bytes.find(b"?", start)
+            if qstart != -1:
+                logger.debug("%d: line_bytes[qstart:]: %d: %s" % (row, qstart, line_bytes[qstart:].decode('utf-8')))
+            hstart = line_bytes.find(b"{!", start)
+            if hstart != -1:
+                logger.debug("%d: line_bytes[hstart:]: %d: %s" % (row, hstart, line_bytes[hstart:].decode('utf-8')))
             if qstart != -1 or hstart != -1:
-                logger.debug("line[%d,%d]:%s" % (row, start, line))
-                logger.debug("hstart: (%d,%d)" % (qstart, hstart))
+                logger.debug("line[%d:]:%s" % (start, line))
+                logger.debug("(qstart, hstart): (%d,%d)" % (qstart, hstart))
             if qstart == -1:
                 start = hstart
             elif hstart == -1:
