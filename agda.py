@@ -203,7 +203,6 @@ def findGoals(goalList):
     lines = vim.current.buffer
     row = 1
     agdaHolehlID = vim.eval('hlID("agdaHole")')
-    #logger.debug("lines: %s" % "\n".join(lines))
     logger.debug("agdaHolehlID: %s" % agdaHolehlID)
     for line in lines:
         line_bytes = line.encode('utf-8')
@@ -230,10 +229,12 @@ def findGoals(goalList):
 
                 synID = vim.eval('synID("%d", "%d", 0)' % (row, start))
                 logger.debug("synID(%d,%d) = %s" % (row, start, synID))
-                if vim.eval('synID("%d", "%d", 0)' % (row, start)) == agdaHolehlID:
+                if synID == agdaHolehlID:
                     logger.debug("goalList: %s" % goalList)
+                    logger.debug("goalList[0]: %s" % goalList[0])
                     logger.debug("goals[goalList.pop(0)] = (%d,%d)" % (row, start))
                     goals[goalList.pop(0)] = (row, start)
+                    logger.debug("goals: %s" % goals)
             if len(goalList) == 0: break
         if len(goalList) == 0: break
         row = row + 1
@@ -313,6 +314,7 @@ def gotoAnnotation():
 def interpretResponse(responses, quiet = False):
     global agdaVersion
     for response in responses:
+        logger.debug('response: %s' % response)
         if response.startswith('(agda2-info-action ') or response.startswith('(agda2-info-action-and-copy '):
             tag = '(agda2-info-action ' if response.startswith('(agda2-info-action ') else '(agda2-info-action-and-copy '
             if quiet and '*Error*' in response: vim.command('cwindow')
@@ -362,12 +364,17 @@ def interpretResponse(responses, quiet = False):
             sendCommandLoad(f, quiet)
             break
         elif "(agda2-make-case-action '" in response:
+            logger.debug('response(bytes): %s' % response.encode('utf-8'))
             response = response.replace("?", "{!   !}") # this probably isn't safe
             cases = re.findall(r'"((?:[^"\\]|\\.)*)"', response[response.index("agda2-make-case-action '")+24:])
             row = vim.current.window.cursor[0]
+            logger.debug('row: %s' % row)
             prefix = re.match(r'[ \t]*', vim.current.line).group()
+            logger.debug('prefix: "%s"' % prefix)
             vim.current.buffer[row-1:row] = [prefix + case for case in cases]
+            logger.debug('vim.current.buffer[%d]: %s' % (row-1, vim.current.buffer[row-1]))
             f = vim.current.buffer.name
+            logger.debug('f: %s' % f)
             sendCommandLoad(f, quiet)
             break
         elif response.startswith('(agda2-give-action '):
@@ -446,7 +453,7 @@ def getHoleBodyAtCursor():
     pos = linesub_len
     logger.debug('linesub: %d: %s' % (linesub_len, linesub))
     try:
-        logger.debug('line[pos]: %s' % line[pos])
+        logger.debug('line[%d]: %s' % (pos, line[pos]))
         if line[pos] == "?":
             return ("?", findGoal(r, c+1))
     except IndexError:
@@ -462,9 +469,11 @@ def getHoleBodyAtCursor():
         logger.debug('getHoleBodyAtCursor: AttributeError')
         return None
     result = line[start+2:end-2].strip()
+    logger.debug('getHoleBodyAtCursor: result: %d,%d: %s' % (start+2, end-2, result))
     if result == "":
         result = "?"
     return (result, findGoal(r, len(line[:start].encode('utf-8'))+1))
+
 
 def getWordAtCursor():
     return vim.eval("expand('<cWORD>')").strip()
