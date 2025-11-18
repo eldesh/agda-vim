@@ -310,8 +310,9 @@ def interpretResponse(responses, quiet = False):
     global agdaVersion
     for response in responses:
         if response.startswith('(agda2-info-action ') or response.startswith('(agda2-info-action-and-copy '):
+            tag = '(agda2-info-action ' if response.startswith('(agda2-info-action ') else '(agda2-info-action-and-copy '
             if quiet and '*Error*' in response: vim.command('cwindow')
-            strings = re.findall(r'"((?:[^"\\]|\\.)*)"', response[19:])
+            strings = re.findall(r'"((?:[^"\\]|\\.)*)"', response[len(tag):])
             if strings[0] == '*Agda Version*':
                 logger.debug('AgdaVersion: %s' % strings[1])
                 agdaVersion = AgdaVersion.parse(strings[1])
