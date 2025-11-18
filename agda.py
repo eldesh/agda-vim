@@ -203,15 +203,18 @@ def findGoals(goalList):
     lines = vim.current.buffer
     row = 1
     agdaHolehlID = vim.eval('hlID("agdaHole")')
-    logger.debug("lines: %s" % "\n".join(lines))
+    #logger.debug("lines: %s" % "\n".join(lines))
     logger.debug("agdaHolehlID: %s" % agdaHolehlID)
     for line in lines:
+        #logger.debug("line[%d]:%s" % (row, line))
 
         start = 0
         while start != -1:
-            qstart = line.find("?", start)
-            hstart = line.find("{!", start)
-            logger.debug("hstart: (%d,%d)" % (qstart, hstart))
+            qstart = line.encode('utf-8').find(b"?", start)
+            hstart = line.encode('utf-8').find(b"{!", start)
+            if qstart != -1 or hstart != -1:
+                logger.debug("line[%d,%d]:%s" % (row, start, line))
+                logger.debug("hstart: (%d,%d)" % (qstart, hstart))
             if qstart == -1:
                 start = hstart
             elif hstart == -1:
@@ -221,7 +224,11 @@ def findGoals(goalList):
             if start != -1:
                 start = start + 1
 
+                synID = vim.eval('synID("%d", "%d", 0)' % (row, start))
+                logger.debug("synID(%d,%d) = %s" % (row, start, synID))
                 if vim.eval('synID("%d", "%d", 0)' % (row, start)) == agdaHolehlID:
+                    logger.debug("goalList: %s" % goalList)
+                    logger.debug("goals[goalList.pop(0)] = (%d,%d)" % (row, start))
                     goals[goalList.pop(0)] = (row, start)
             if len(goalList) == 0: break
         if len(goalList) == 0: break
@@ -232,6 +239,8 @@ def findGoals(goalList):
 def findGoal(row, col):
     global goals
     for item in goals.items():
+        logger.debug('item[1][0]: %s' % item[1][0])
+        logger.debug('item[1][1]: %s' % item[1][1])
         if item[1][0] == row and item[1][1] == col:
             logger.debug('findGoal (found) in %s: (%d,%d)' % (item, row, col))
             return item[0]
@@ -358,7 +367,11 @@ def interpretResponse(responses, quiet = False):
             break
         elif response.startswith('(agda2-give-action '):
             response = response.replace("?", "{!   !}")
+            logger.debug('response: %s' % response)
+            logger.debug('response(bytes): %s' % response.encode('utf-8'))
             match = re.search(r'(\d+)\s+"((?:[^"\\]|\\.)*)"', response[19:])
+            logger.debug('match: %s' % match)
+            logger.debug('match.group(2): %s' % match.group(2))
             replaceHole(unescape(match.group(2)))
         # elif response.startswith('(agda2-highlight-clear)'):
             # pass # Maybe do something with this.
