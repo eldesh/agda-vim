@@ -411,18 +411,21 @@ def sendCommandLoad(file, quiet):
 #    return line[start:end]
 
 def replaceHole(replacement):
+    logger.debug('replacement: %s' % replacement)
     rep = replacement.replace('\n', ' ').replace('    ', ';') # TODO: This probably needs to be handled better
     (r, c) = vim.current.window.cursor
     line = vim.current.line
-    if line[c] == "?":
+    line_bytes = line.encode('utf-8')
+    c_str = len(line_bytes[:c].decode('utf-8'))
+    if line_bytes[c] == "?":
         start = c
         end = c+1
     else:
         try:
             mo = None
-            for mo in re.finditer(r"{!", line[:min(len(line),c+2)]): pass
+            for mo in re.finditer(r"{!", line[:min(len(line),c_str+2)]): pass
             start = mo.start()
-            end = re.search(r"!}", line[max(0,c-1):]).end() + max(0,c-1)
+            end = re.search(r"!}", line[max(0,c_str-1):]).end() + max(0,c_str-1)
         except AttributeError:
             return
     vim.current.line = line[:start] + rep + line[end:]
