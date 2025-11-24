@@ -31,7 +31,7 @@ class AgdaVersion:
 
     @classmethod
     def parse(cls, text: str) -> 'AgdaVersion':
-        """Parse an Agda version string of the form 'Agda version X.Y.Z.W-ABC'."""
+        '''Parse an Agda version string of the form 'Agda version X.Y.Z.W-ABC'.'''
         agdaVersion = [int(c) for c in text[12:].split("-")[0].split('.')]
         agdaVersion = agdaVersion + [0]*max(0, 4-len(agdaVersion))
         return AgdaVersion(*agdaVersion)
@@ -88,7 +88,7 @@ class AgdaProcess:
         return self._process.stdout
 
     def restart(self, path):
-        """Terminates the current Agda process and starts a new one located at `path`."""
+        '''Terminates the current Agda process and starts a new one located at `path`.'''
         self.stopWait()
         self._path = path
         self._process = subprocess.Popen(
@@ -100,7 +100,7 @@ class AgdaProcess:
         )
 
     def stopWait(self):
-        """Terminates the current Agda process and waits for it to exit. If it does not exit within 10 seconds, it is killed."""
+        '''Terminates the current Agda process and waits for it to exit. If it does not exit within 10 seconds, it is killed.'''
         sendCommand('Cmd_exit')
         try:
             self._process.wait(timeout = 10)
@@ -505,9 +505,9 @@ def getWordAtCursor():
 
 ## Directly exposed functions: {
 
-
 @vim_func
 def AgdaRestartAgda(path):
+    '''Tries to start or restart the Agda process.'''
     global agda
 
     if agda is None:
