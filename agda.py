@@ -529,7 +529,8 @@ def AgdaQuitAgda():
     global agda
 
     if agda:
-        agda.swtopWait()
+        logger.info("Stopping Agda process")
+        agda.stopWait()
         agda = None
 
 @vim_func(conv={'quiet': vim_bool})
