@@ -30,6 +30,9 @@ autocmd QuickfixCmdPost make call AgdaReloadSyntax()|call AgdaShowVersion(v:true
 setlocal autowrite
 let b:undo_ftplugin .= ' | setlocal autowrite<'
 
+" Path to the Agda executable used by the currently running Agda process.
+let s:agdavim_running_agda_path = ''
+
 if !exists('g:agdavim_agda_path') && exists('$AGDAVIM_AGDA_PATH')
     let g:agdavim_agda_path = $AGDAVIM_AGDA_PATH
 endif
@@ -242,12 +245,21 @@ endfunction
 
 " Show the path of the running (or configured) Agda executable.
 function! AgdaShowRunningPath()
-    let l:path = call(s:python_eval, ['AgdaRunningPath()'])
-    if exists('*s:LogAgda')
-        call s:LogAgda('Agda path', 'Running Agda executable: ' . l:path, 'False')
-    else
-        echom 'Running Agda executable: ' . l:path
+    call s:LogAgda('Agda path', 'Running Agda executable: ' . s:agdavim_running_agda_path, v:false)
+endfunction
+
+function! AgdaRestart(agda_path)
+    if a:agda_path !=# ''
+        let g:agdavim_agda_path = a:agda_path
     endif
+    if s:agdavim_running_agda_path ==# g:agdavim_agda_path
+        return
+    endif
+    call AgdaRestartAgda(g:agdavim_agda_path)
+    if s:agdavim_running_agda_path !=# ''
+        call s:LogAgda('Agda restart', 'Restarting Agda executable: ' . g:agdavim_agda_path, v:false)
+    endif
+    let s:agdavim_running_agda_path = g:agdavim_agda_path
 endfunction
 
 execute s:python_loadfile . resolve(expand('<sfile>:p:h') . '/../agda.py')
@@ -278,11 +290,11 @@ command! -buffer -nargs=? AgdaVimSetLoggingLevel
     \ endif |
     \ call AgdaVimSetLoggingLevel(g:agdavim_logging_level)
 
-command! -buffer -nargs=? -complete=file AgdaRestartAgda
+command! -buffer -nargs=? -complete=file AgdaRestart
     \ if <q-args> !=# '' |
     \   let g:agdavim_agda_path = <q-args> |
     \ endif |
-    \ call AgdaRestartAgda(g:agdavim_agda_path)
+    \ call AgdaRestart(g:agdavim_agda_path)
 
 nnoremap <buffer> <LocalLeader>l :AgdaReload<CR>
 nnoremap <buffer> <LocalLeader>t :call AgdaInfer()<CR>
@@ -299,7 +311,7 @@ nnoremap <buffer> <LocalLeader>y :call AgdaWhyInScope('')<CR>
 nnoremap <buffer> <LocalLeader>h :call AgdaHelperFunction()<CR>
 nnoremap <buffer> <LocalLeader>d :call AgdaGotoAnnotation()<CR>
 nnoremap <buffer> <LocalLeader>m :AgdaMetas<CR>
-nnoremap <buffer> <LocalLeader>xr :call AgdaRestartAgda(g:agdavim_agda_path)<CR>
+nnoremap <buffer> <LocalLeader>xr :call AgdaRestart('')<CR>
 nnoremap <buffer> <LocalLeader>xq :call AgdaQuitAgda()<CR>
 
 " Show/reload metas
@@ -314,7 +326,7 @@ nnoremap <buffer> <silent> <C-y>  2h:let _s=@/<CR>? {!\\| \?<CR>:let @/=_s<CR>2l
 inoremap <buffer> <silent> <C-y>  <C-o>2h<C-o>:let _s=@/<CR><C-o>? {!\\| \?<CR><C-o>:let @/=_s<CR><C-o>2l
 
 AgdaReload
-AgdaRestartAgda
+AgdaRestart
 
 endif
 

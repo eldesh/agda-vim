@@ -62,6 +62,12 @@ class RewriteMode(Enum):
 
 
 class AgdaProcess:
+    """Agda process wrapper class for managing an Agda subprocess.
+
+    Attributes:
+        _process (subprocess.Popen): The subprocess running the Agda process.
+        _path (str): The file path to the Agda executable.
+    """
     _process: subprocess.Popen
     _path: str
 
@@ -513,11 +519,9 @@ def AgdaRestartAgda(path):
     if agda is None:
         logger.info("Starting Agda process with path: %s" % path)
         agda = AgdaProcess(path)
-    elif agda.path != path:
+    else:
         logger.info("Restarting Agda process with new path: %s" % path)
         agda.restart(path)
-    else:
-        logger.info("Agda process already running with path: %s" % path)
 
 @vim_func
 def AgdaQuitAgda():
@@ -712,8 +716,5 @@ def AgdaVimSetLoggingLevel(level):
     logging.basicConfig(level=level)
     print("Set logging level to %s" % logging.getLevelName(level))
 
-@vim_func
-def AgdaRunningPath():
-    return agda.path
 
 ## }
