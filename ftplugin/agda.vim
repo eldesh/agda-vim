@@ -253,6 +253,7 @@ function! AgdaRestart(agda_path)
         let g:agdavim_agda_path = a:agda_path
     endif
     if s:agdavim_running_agda_path ==# g:agdavim_agda_path
+        call s:LogAgda('Agda restart', 'Agda is already running: ' . g:agdavim_agda_path, v:false)
         return
     endif
     call AgdaRestartAgda(g:agdavim_agda_path)
@@ -282,7 +283,8 @@ command! -buffer -nargs=0 AgdaSetRewriteModeNormalised exec s:python_cmd "setRew
 command! -buffer -nargs=0 AgdaSetRewriteModeSimplified exec s:python_cmd "setRewriteMode('Simplified')"
 command! -buffer -nargs=0 AgdaSetRewriteModeHeadNormal exec s:python_cmd "setRewriteMode('HeadNormal')"
 command! -buffer -nargs=0 AgdaSetRewriteModeInstantiated exec s:python_cmd "setRewriteMode('Instantiated')"
-command! -buffer -nargs=0 AgdaQuitAgda call AgdaQuitAgda()
+command! -buffer -nargs=0 AgdaQuitAgda call AgdaQuitAgda() | let s:agdavim_running_agda_path = ''
+command! -buffer -nargs=? AgdaSearchAbout call AgdaSearchAbout(<q-args>)
 
 command! -buffer -nargs=? AgdaVimSetLoggingLevel
     \ if <q-args> !=# '' |
@@ -311,8 +313,9 @@ nnoremap <buffer> <LocalLeader>y :call AgdaWhyInScope('')<CR>
 nnoremap <buffer> <LocalLeader>h :call AgdaHelperFunction()<CR>
 nnoremap <buffer> <LocalLeader>d :call AgdaGotoAnnotation()<CR>
 nnoremap <buffer> <LocalLeader>m :AgdaMetas<CR>
-nnoremap <buffer> <LocalLeader>xr :call AgdaRestart('')<CR>
-nnoremap <buffer> <LocalLeader>xq :call AgdaQuitAgda()<CR>
+nnoremap <buffer> <LocalLeader>z :AgdaSearchAbout<CR>
+nnoremap <buffer> <LocalLeader>xr :AgdaRestart<CR>
+nnoremap <buffer> <LocalLeader>xq :AgdaQuitAgda<CR>
 
 " Show/reload metas
 nnoremap <buffer> <C-e> :AgdaMetas<CR>

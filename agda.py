@@ -666,6 +666,14 @@ def AgdaWhyInScope(termName):
 
 
 @vim_func
+def AgdaSearchAbout(name: str = ''):
+    '''Search About an identifier.'''
+    cname = getWordAtCursor() if name == '' else name
+    query = promptUser("Name: ") if cname == '' else cname
+    sendCommand('Cmd_search_about_toplevel %s "%s"' % (rewriteMode.value, query))
+
+
+@vim_func
 def AgdaMetas(mode = None):
     if mode is None:
         rewriteMode = RewriteMode.Normalised
