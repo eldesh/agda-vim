@@ -280,12 +280,10 @@ def findGoal(row, col):
 
 def getOutput():
     line = agda.stdout.readline()[7:] # get rid of the "Agda2> " prompt
-    logger.debug('getOutput: %s' % line)
     lines = []
     while not line.startswith('Agda2> cannot read') and line != "":
         lines.append(line)
         line = agda.stdout.readline()
-    logger.debug('getOutput: lines: %s' % lines)
     return lines
 
 # This is not very efficient presumably.
@@ -346,8 +344,8 @@ def interpretResponse(responses, quiet = False):
             if quiet and '*Error*' in response: vim.command('cwindow')
             strings = re.findall(r'"((?:[^"\\]|\\.)*)"', response[len(tag):])
             if strings[0] == '*Agda Version*':
-                logger.debug('AgdaVersion: %s' % strings[1])
                 agdaVersion = AgdaVersion.parse(strings[1])
+                logger.debug('AgdaVersion: %s' % agdaVersion)
             if quiet: continue
             vim.command('call s:LogAgda("%s","%s","%s")'% (strings[0], strings[1], response.endswith('t)')))
         elif "(agda2-goals-action '" in response:
