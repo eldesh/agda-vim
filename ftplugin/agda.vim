@@ -270,6 +270,7 @@ command! -buffer -nargs=0 AgdaSetRewriteModeNormalised exec s:python_cmd "setRew
 command! -buffer -nargs=0 AgdaSetRewriteModeSimplified exec s:python_cmd "setRewriteMode('Simplified')"
 command! -buffer -nargs=0 AgdaSetRewriteModeHeadNormal exec s:python_cmd "setRewriteMode('HeadNormal')"
 command! -buffer -nargs=0 AgdaSetRewriteModeInstantiated exec s:python_cmd "setRewriteMode('Instantiated')"
+command! -buffer -nargs=0 AgdaQuitAgda call AgdaQuitAgda()
 
 command! -buffer -nargs=? AgdaVimSetLoggingLevel
     \ if <q-args> !=# '' |
@@ -299,6 +300,7 @@ nnoremap <buffer> <LocalLeader>h :call AgdaHelperFunction()<CR>
 nnoremap <buffer> <LocalLeader>d :call AgdaGotoAnnotation()<CR>
 nnoremap <buffer> <LocalLeader>m :AgdaMetas<CR>
 nnoremap <buffer> <LocalLeader>xr :call AgdaRestartAgda(g:agdavim_agda_path)<CR>
+nnoremap <buffer> <LocalLeader>xq :call AgdaQuitAgda()<CR>
 
 " Show/reload metas
 nnoremap <buffer> <C-e> :AgdaMetas<CR>

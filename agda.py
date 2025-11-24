@@ -519,6 +519,14 @@ def AgdaRestartAgda(path):
     else:
         logger.info("Agda process already running with path: %s" % path)
 
+@vim_func
+def AgdaQuitAgda():
+    '''Quit and clean up after agda2'''
+    global agda
+
+    if agda:
+        agda.swtopWait()
+        agda = None
 
 @vim_func(conv={'quiet': vim_bool})
 def AgdaShowVersion(quiet):
