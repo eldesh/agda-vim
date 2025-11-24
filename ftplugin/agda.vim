@@ -30,6 +30,22 @@ autocmd QuickfixCmdPost make call AgdaReloadSyntax()|call AgdaShowVersion(v:true
 setlocal autowrite
 let b:undo_ftplugin .= ' | setlocal autowrite<'
 
+if !exists('g:agdavim_agda_path') && exists('$AGDAVIM_AGDA_PATH')
+    let g:agdavim_agda_path = $AGDAVIM_AGDA_PATH
+endif
+
+if !exists('g:agdavim_agda_path')
+    let g:agdavim_agda_path = 'agda'
+endif
+
+if !exists('g:agdavim_logging_level') && exists('$AGDAVIM_LOGGING_LEVEL')
+    let g:agdavim_logging_level = $AGDAVIM_LOGGING_LEVEL
+endif
+
+if !exists('g:agdavim_logging_level')
+    let g:agdavim_logging_level = 'WARNING'
+endif
+
 let g:agdavim_agda_includepathlist = deepcopy(['.'] + get(g:, 'agda_extraincpaths', []))
 call map(g:agdavim_agda_includepathlist, ' ''"'' . v:val . ''"'' ')
 let &l:makeprg = 'agda --vim ' . '-i ' . join(g:agdavim_agda_includepathlist, ' -i ') . ' %'
@@ -162,6 +178,7 @@ endfunction
 let s:using_python2 = s:UsingPython2()
 let s:python_cmd = s:using_python2 ? 'py ' : 'py3 '
 let s:python_loadfile = s:using_python2 ? 'pyfile ' : 'py3file '
+let s:python_eval = s:using_python2 ? 'pyeval' : 'py3eval'
 
 if has('python') || has('python3')
 
@@ -223,12 +240,22 @@ function! s:LogAgda(name, text, append)
     let &eventignore = eventignore_save
 endfunction
 
+" Show the path of the running (or configured) Agda executable.
+function! AgdaShowRunningPath()
+    let l:path = call(s:python_eval, ['AgdaRunningPath()'])
+    if exists('*s:LogAgda')
+        call s:LogAgda('Agda path', 'Running Agda executable: ' . l:path, 'False')
+    else
+        echom 'Running Agda executable: ' . l:path
+    endif
+endfunction
+
 execute s:python_loadfile . resolve(expand('<sfile>:p:h') . '/../agda.py')
 
 command! -buffer -nargs=0 AgdaLoad call AgdaLoad(v:false)
 command! -buffer -nargs=0 AgdaShowVersion call AgdaShowVersion(v:false)
 command! -buffer -nargs=0 AgdaReload silent! make!|redraw!
-command! -buffer -nargs=0 AgdaRestartAgda exec s:python_cmd 'AgdaRestart()'
+command! -buffer -nargs=0 AgdaShowRunningPath call AgdaShowRunningPath()
 command! -buffer -nargs=0 AgdaShowImplicitArguments exec s:python_cmd "sendCommand('ShowImplicitArgs True')"
 command! -buffer -nargs=0 AgdaHideImplicitArguments exec s:python_cmd "sendCommand('ShowImplicitArgs False')"
 command! -buffer -nargs=0 AgdaToggleImplicitArguments exec s:python_cmd "sendCommand('ToggleImplicitArgs')"
@@ -243,7 +270,18 @@ command! -buffer -nargs=0 AgdaSetRewriteModeNormalised exec s:python_cmd "setRew
 command! -buffer -nargs=0 AgdaSetRewriteModeSimplified exec s:python_cmd "setRewriteMode('Simplified')"
 command! -buffer -nargs=0 AgdaSetRewriteModeHeadNormal exec s:python_cmd "setRewriteMode('HeadNormal')"
 command! -buffer -nargs=0 AgdaSetRewriteModeInstantiated exec s:python_cmd "setRewriteMode('Instantiated')"
-command! -buffer -nargs=0 AgdaVimSetLoggingLevel call AgdaVimSetLoggingLevel()
+
+command! -buffer -nargs=? AgdaVimSetLoggingLevel
+    \ if <q-args> !=# '' |
+    \   let g:agdavim_logging_level = <q-args> |
+    \ endif |
+    \ call AgdaVimSetLoggingLevel(g:agdavim_logging_level)
+
+command! -buffer -nargs=? -complete=file AgdaRestartAgda
+    \ if <q-args> !=# '' |
+    \   let g:agdavim_agda_path = <q-args> |
+    \ endif |
+    \ call AgdaRestartAgda(g:agdavim_agda_path)
 
 nnoremap <buffer> <LocalLeader>l :AgdaReload<CR>
 nnoremap <buffer> <LocalLeader>t :call AgdaInfer()<CR>
@@ -260,6 +298,7 @@ nnoremap <buffer> <LocalLeader>y :call AgdaWhyInScope('')<CR>
 nnoremap <buffer> <LocalLeader>h :call AgdaHelperFunction()<CR>
 nnoremap <buffer> <LocalLeader>d :call AgdaGotoAnnotation()<CR>
 nnoremap <buffer> <LocalLeader>m :AgdaMetas<CR>
+nnoremap <buffer> <LocalLeader>xr :call AgdaRestartAgda(g:agdavim_agda_path)<CR>
 
 " Show/reload metas
 nnoremap <buffer> <C-e> :AgdaMetas<CR>
@@ -273,7 +312,7 @@ nnoremap <buffer> <silent> <C-y>  2h:let _s=@/<CR>? {!\\| \?<CR>:let @/=_s<CR>2l
 inoremap <buffer> <silent> <C-y>  <C-o>2h<C-o>:let _s=@/<CR><C-o>? {!\\| \?<CR><C-o>:let @/=_s<CR><C-o>2l
 
 AgdaReload
-AgdaVimSetLoggingLevel
+AgdaRestartAgda
 
 endif
 

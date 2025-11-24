@@ -1,6 +1,5 @@
 import vim
 import re
-import os
 from functools import total_ordering
 import subprocess
 from functools import wraps
@@ -62,6 +61,56 @@ class RewriteMode(Enum):
             raise ValueError("Unknown RewriteMode: %s" % text)
 
 
+class AgdaProcess:
+    _process: subprocess.Popen
+    _path: str
+
+    def __init__(self, path: str) -> 'AgdaProcess':
+        self._path = path
+        self._process = subprocess.Popen(
+            [self._path, "--interaction"],
+            bufsize = 1,
+            stdin = subprocess.PIPE,
+            stdout = subprocess.PIPE,
+            universal_newlines = True
+        )
+
+    @property
+    def path(self) -> str:
+        return self._path
+
+    @property
+    def stdin(self):
+        return self._process.stdin
+
+    @property
+    def stdout(self):
+        return self._process.stdout
+
+    def restart(self, path):
+        """Terminates the current Agda process and starts a new one located at `path`."""
+        self.stopWait()
+        self._path = path
+        self._process = subprocess.Popen(
+            [self._path, "--interaction"],
+            bufsize = 1,
+            stdin = subprocess.PIPE,
+            stdout = subprocess.PIPE,
+            universal_newlines = True
+        )
+
+    def stopWait(self):
+        """Terminates the current Agda process and waits for it to exit. If it does not exit within 10 seconds, it is killed."""
+        sendCommand('Cmd_exit')
+        try:
+            self._process.wait(timeout = 10)
+        except subprocess.TimeoutExpired:
+            self._process.kill()
+            self._process.wait()
+        self._process = None
+        self._path = None
+
+
 python_cmd = 'py' if version_info.major == 2 else 'py3'
 
 logger = logging.getLogger('agda.py')
@@ -79,26 +128,6 @@ def logging_level_from_str(x):
 
 def logging_level_from(x):
     return logging_level_from_str(x.decode('utf-8') if isinstance(x, bytes) else x)
-
-
-def get_logging_level():
-    """
-    Obtain and configure this module's logger.
-
-    Logging level precedence:
-      1) Vim script variable g:agdavim_logging_level (e.g., 10, 'DEBUG', 'INFO').
-      2) Environment variable AGDAVIM_LOGGING_LEVEL (e.g., 10, 'DEBUG', 'INFO').
-      3) logging.WARNING if neither is set
-
-    Returns:
-        logging.Logger: the configured logger.
-    """
-    level = (
-        logging_level_from(vim.vars.get('agdavim_logging_level')) or
-        logging_level_from(os.getenv('AGDAVIM_LOGGING_LEVEL')) or
-        logging.WARNING
-    )
-    return level
 
 
 def vim_func(vim_fname_or_func=None, conv=None):
@@ -159,7 +188,7 @@ def vim_bool(s):
 
 # start Agda
 # TODO: I'm pretty sure this will start an agda process per buffer which is less than desirable...
-agda = subprocess.Popen(["agda", "--interaction"], bufsize = 1, stdin = subprocess.PIPE, stdout = subprocess.PIPE, universal_newlines = True)
+agda = None
 
 goals = {}
 annotations = []
@@ -189,9 +218,6 @@ def promptUser(msg):
     vim.command('call inputrestore()')
     return result
 
-def AgdaRestart():
-    global agda
-    agda = subprocess.Popen(["agda", "--interaction"], bufsize = 1, stdin = subprocess.PIPE, stdout = subprocess.PIPE, universal_newlines = True)
 
 def findGoals(goalList):
     global goals
@@ -481,6 +507,21 @@ def getWordAtCursor():
 
 ## Directly exposed functions: {
 
+
+@vim_func
+def AgdaRestartAgda(path):
+    global agda
+
+    if agda is None:
+        logger.info("Starting Agda process with path: %s" % path)
+        agda = AgdaProcess(path)
+    elif agda.path != path:
+        logger.info("Restarting Agda process with new path: %s" % path)
+        agda.restart(path)
+    else:
+        logger.info("Agda process already running with path: %s" % path)
+
+
 @vim_func(conv={'quiet': vim_bool})
 def AgdaShowVersion(quiet):
     sendCommand('Cmd_show_version', quiet=quiet)
@@ -660,10 +701,13 @@ def AgdaHelperFunction():
         sendCommand('Cmd_helper_function %s %d noRange "%s"' % (rewriteMode.value, result[1], escape(result[0])))
 
 @vim_func
-def AgdaVimSetLoggingLevel():
-    level = get_logging_level()
+def AgdaVimSetLoggingLevel(level):
     logger.setLevel(level)
     logging.basicConfig(level=level)
     print("Set logging level to %s" % logging.getLevelName(level))
+
+@vim_func
+def AgdaRunningPath():
+    return agda.path
 
 ## }
