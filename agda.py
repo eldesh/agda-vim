@@ -506,7 +506,7 @@ def getHoleBodyAtCursor():
 
 
 def getWordAtCursor():
-    return vim.eval("expand('<cWORD>')").strip()
+    return vim.eval("expand('<cword>')").strip()
 
 
 ## Directly exposed functions: {
