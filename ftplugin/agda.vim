@@ -224,7 +224,7 @@ function! s:LogAgda(name, text, append)
     set eventignore=all
 
     let &l:statusline = a:name
-    if a:append == 'True'
+    if a:append == v:true
         silent put =a:text
     else
         silent %delete _
@@ -300,8 +300,8 @@ command! -buffer -nargs=? -complete=file AgdaRestart
 
 nnoremap <buffer> <LocalLeader>l :AgdaReload<CR>
 nnoremap <buffer> <LocalLeader>t :call AgdaInfer()<CR>
-nnoremap <buffer> <LocalLeader>r :call AgdaRefine("False")<CR>
-nnoremap <buffer> <LocalLeader>R :call AgdaRefine("True")<CR>
+nnoremap <buffer> <LocalLeader>r :call AgdaRefine(v:false)<CR>
+nnoremap <buffer> <LocalLeader>R :call AgdaRefine(v:true)<CR>
 nnoremap <buffer> <LocalLeader>g :call AgdaGive()<CR>
 nnoremap <buffer> <LocalLeader>c :call AgdaMakeCase()<CR>
 nnoremap <buffer> <LocalLeader>a :call AgdaAuto()<CR>
