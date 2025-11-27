@@ -143,7 +143,7 @@ def vim_func(vim_fname_or_func=None, conv=None):
         fname = func.__name__
         vim_fname = vim_fname or fname
         arg_names = func.__code__.co_varnames[:func.__code__.co_argcount]
-        arg_defaults = dict(zip(arg_names[:-len(func.__defaults__ or ()):], func.__defaults__ or []))
+        arg_defaults = dict(zip(arg_names[-len(func.__defaults__ or ()):], func.__defaults__ or []))
 
         @wraps(func)
         def from_vim(vim_arg_dict):
