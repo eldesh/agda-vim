@@ -160,7 +160,7 @@ def vim_func(vim_fname_or_func=None, conv=None):
                 args[k] = val
             return func(**args)
 
-        setattr(func, 'from_vim', from_vim)
+        func.from_vim = from_vim
 
         vim.command('''
             function! {vim_fname}({vim_params})
