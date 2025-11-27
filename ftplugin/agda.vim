@@ -329,6 +329,7 @@ nnoremap <buffer> <silent> <C-y>  2h:let _s=@/<CR>? {!\\| \?<CR>:let @/=_s<CR>2l
 inoremap <buffer> <silent> <C-y>  <C-o>2h<C-o>:let _s=@/<CR><C-o>? {!\\| \?<CR><C-o>:let @/=_s<CR><C-o>2l
 
 AgdaReload
+AgdaVimSetLoggingLevel
 AgdaRestart
 
 endif
