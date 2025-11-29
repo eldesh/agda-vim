@@ -584,7 +584,8 @@ def AgdaMakeCase():
     elif result[1] is None:
         print("Goal not loaded")
     elif result[0] == "?":
-        sendCommand('Cmd_make_case %d noRange "%s"' % (result[1], escape(promptUser("Make case on: "))))
+        prompt = "pattern variables to case (empty for split on result): "
+        sendCommand('Cmd_make_case %d noRange "%s"' % (result[1], escape(promptUser(prompt))))
     else:
         sendCommand('Cmd_make_case %d noRange "%s"' % (result[1], escape(result[0])))
 
