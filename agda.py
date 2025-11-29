@@ -612,6 +612,19 @@ def AgdaAuto():
         else:
             sendCommand('Cmd_autoOne %d noRange "%s"' % (result[1], escape(result[0]) if result[0] != "?" else ""))
 
+
+@vim_func
+def AgdaGoalAndContext():
+    '''Shows the type of the goal at point and the current context'''
+    result = getHoleBodyAtCursor()
+    if result is None:
+        print("No hole under the cursor")
+    elif result[1] is None:
+        print("Goal not loaded")
+    else:
+        sendCommand('Cmd_goal_type_context %s %d noRange "%s"' % (rewriteMode.value, result[1], escape(result[0])))
+
+
 @vim_func
 def AgdaShowContext():
     '''Show the context of the goal at point'''
