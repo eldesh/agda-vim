@@ -459,7 +459,7 @@ def replaceHole(replacement):
     line = vim.current.line
     line_bytes = line.encode('utf-8')
     c_str = len(line_bytes[:c].decode('utf-8'))
-    if line_bytes[c] == "?":
+    if line_bytes[c] == ord("?"):
         start = c
         end = c+1
     else:
