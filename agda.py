@@ -500,8 +500,6 @@ def getHoleBodyAtCursor():
         return None
     result = line[start+2:end-2].strip()
     logger.debug('getHoleBodyAtCursor: result: %d,%d: %s' % (start+2, end-2, result))
-    if result == "":
-        result = "?"
     return (result, findGoal(r, len(line[:start].encode('utf-8'))+1))
 
 
