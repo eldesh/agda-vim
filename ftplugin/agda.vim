@@ -308,6 +308,7 @@ nnoremap <buffer> <LocalLeader>a :call AgdaAuto()<CR>
 nnoremap <buffer> <LocalLeader>e :call AgdaShowContext()<CR>
 nnoremap <buffer> <LocalLeader>, :call AgdaGoalAndContext()<CR>
 nnoremap <buffer> <LocalLeader>. :call AgdaGoalAndContextAndInferred()<CR>
+nnoremap <buffer> <LocalLeader>; :call AgdaGoalAndContextAndChecked()<CR>
 nnoremap <buffer> <LocalLeader>n :call AgdaNormalize("IgnoreAbstract")<CR>
 nnoremap <buffer> <LocalLeader>N :call AgdaNormalize("DefaultCompute")<CR>
 nnoremap <buffer> <LocalLeader>M :call AgdaShowModule('')<CR>
