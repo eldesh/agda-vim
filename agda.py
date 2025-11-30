@@ -626,6 +626,21 @@ def AgdaGoalAndContext():
 
 
 @vim_func
+def AgdaGoalAndContextAndInferred():
+    '''Shows the context, the goal and the given expression's inferred type'''
+    result = getHoleBodyAtCursor()
+    if result is None:
+        print("No hole under the cursor")
+    elif result[1] is None:
+        print("Goal not loaded")
+    elif result[0] == "":
+        prompt = promptUser("expression to type: ")
+        sendCommand('Cmd_goal_type_context_infer %s %d noRange "%s"' % (rewriteMode.value, result[1], escape(prompt)))
+    else:
+        sendCommand('Cmd_goal_type_context_infer %s %d noRange "%s"' % (rewriteMode.value, result[1], escape(result[0])))
+
+
+@vim_func
 def AgdaShowContext():
     '''Show the context of the goal at point'''
     result = getHoleBodyAtCursor()
