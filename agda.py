@@ -5,7 +5,7 @@ import subprocess
 from functools import wraps
 from sys import version_info
 import logging
-from enum import Enum, unique
+from enum import Enum, IntEnum, unique
 
 @total_ordering
 class AgdaVersion:
@@ -59,6 +59,30 @@ class RewriteMode(Enum):
             return cls.Instantiated
         else:
             raise ValueError("Unknown RewriteMode: %s" % text)
+
+
+@unique
+class NormaliseType(IntEnum):
+    Simplified = 0
+    Instantiated = 1
+    Normalised = 2
+    HeadNormal = 3
+
+    @classmethod
+    def from_int(cls, value: int) -> 'NormaliseType':
+        return cls(value)
+
+    @classmethod
+    def parse(cls, text: str) -> 'NormaliseType':
+        if text == "Simplified":
+            return cls.Simplified
+        if text == "Instantiated":
+            return cls.Instantiated
+        if text == "Normalised":
+            return cls.Normalised
+        if text == "HeadNormal":
+            return cls.HeadNormal
+        raise ValueError("%s is not a valid NormaliseType" % text)
 
 
 class AgdaProcess:
@@ -613,8 +637,8 @@ def AgdaAuto():
             sendCommand('Cmd_autoOne %d noRange "%s"' % (result[1], escape(result[0]) if result[0] != "?" else ""))
 
 
-@vim_func
-def AgdaGoalAndContext():
+@vim_func(conv={'normalise': lambda x: NormaliseType.from_int(int(x))})
+def AgdaGoalAndContext(normalise):
     '''Shows the type of the goal at point and the current context'''
     result = getHoleBodyAtCursor()
     if result is None:
@@ -622,11 +646,11 @@ def AgdaGoalAndContext():
     elif result[1] is None:
         print("Goal not loaded")
     else:
-        sendCommand('Cmd_goal_type_context %s %d noRange "%s"' % (rewriteMode.value, result[1], escape(result[0])))
+        sendCommand('Cmd_goal_type_context %s %d noRange "%s"' % (normalise.name, result[1], escape(result[0])))
 
 
-@vim_func
-def AgdaGoalAndContextAndInferred():
+@vim_func(conv={'normalise': lambda x: NormaliseType.from_int(int(x))})
+def AgdaGoalAndContextAndInferred(normalise):
     '''Shows the context, the goal and the given expression's inferred type'''
     result = getHoleBodyAtCursor()
     if result is None:
@@ -635,13 +659,13 @@ def AgdaGoalAndContextAndInferred():
         print("Goal not loaded")
     elif result[0] == "":
         prompt = promptUser("expression to type: ")
-        sendCommand('Cmd_goal_type_context_infer %s %d noRange "%s"' % (rewriteMode.value, result[1], escape(prompt)))
+        sendCommand('Cmd_goal_type_context_infer %s %d noRange "%s"' % (normalise.name, result[1], escape(prompt)))
     else:
-        sendCommand('Cmd_goal_type_context_infer %s %d noRange "%s"' % (rewriteMode.value, result[1], escape(result[0])))
+        sendCommand('Cmd_goal_type_context_infer %s %d noRange "%s"' % (normalise.name, result[1], escape(result[0])))
 
 
-@vim_func
-def AgdaGoalAndContextAndChecked():
+@vim_func(conv={'normalise': lambda x: NormaliseType.from_int(int(x))})
+def AgdaGoalAndContextAndChecked(normalise):
     '''Shows the context, the goal and check the given expression's against the hole's type'''
     result = getHoleBodyAtCursor()
     if result is None:
@@ -650,13 +674,13 @@ def AgdaGoalAndContextAndChecked():
         print("Goal not loaded")
     elif result[0] == "":
         prompt = promptUser("expression to type: ")
-        sendCommand('Cmd_goal_type_context_check %s %d noRange "%s"' % (rewriteMode.value, result[1], escape(prompt)))
+        sendCommand('Cmd_goal_type_context_check %s %d noRange "%s"' % (normalise.name, result[1], escape(prompt)))
     else:
-        sendCommand('Cmd_goal_type_context_check %s %d noRange "%s"' % (rewriteMode.value, result[1], escape(result[0])))
+        sendCommand('Cmd_goal_type_context_check %s %d noRange "%s"' % (normalise.name, result[1], escape(result[0])))
 
 
-@vim_func
-def AgdaShowContext():
+@vim_func(conv={'normalise': lambda x: NormaliseType.from_int(int(x))})
+def AgdaShowContext(normalise):
     '''Show the context of the goal at point'''
     result = getHoleBodyAtCursor()
     if result is None:
@@ -664,7 +688,7 @@ def AgdaShowContext():
     elif result[1] is None:
         print("Goal not loaded")
     else:
-        sendCommand('Cmd_context %s %d noRange "%s"' % (rewriteMode.value, result[1], escape(result[0])))
+        sendCommand('Cmd_context %s %d noRange "%s"' % (normalise.name, result[1], escape(result[0])))
 
 @vim_func
 def AgdaInfer():

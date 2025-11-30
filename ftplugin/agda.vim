@@ -298,27 +298,27 @@ command! -buffer -nargs=? -complete=file AgdaRestart
     \ endif |
     \ call AgdaRestart(g:agdavim_agda_path)
 
-nnoremap <buffer> <LocalLeader>l :AgdaReload<CR>
-nnoremap <buffer> <LocalLeader>t :call AgdaInfer()<CR>
-nnoremap <buffer> <LocalLeader>r :call AgdaRefine(v:false)<CR>
-nnoremap <buffer> <LocalLeader>R :call AgdaRefine(v:true)<CR>
-nnoremap <buffer> <LocalLeader>g :call AgdaGive()<CR>
-nnoremap <buffer> <LocalLeader>c :call AgdaMakeCase()<CR>
-nnoremap <buffer> <LocalLeader>a :call AgdaAuto()<CR>
-nnoremap <buffer> <LocalLeader>e :call AgdaShowContext()<CR>
-nnoremap <buffer> <LocalLeader>, :call AgdaGoalAndContext()<CR>
-nnoremap <buffer> <LocalLeader>. :call AgdaGoalAndContextAndInferred()<CR>
-nnoremap <buffer> <LocalLeader>; :call AgdaGoalAndContextAndChecked()<CR>
-nnoremap <buffer> <LocalLeader>n :call AgdaNormalize("IgnoreAbstract")<CR>
-nnoremap <buffer> <LocalLeader>N :call AgdaNormalize("DefaultCompute")<CR>
-nnoremap <buffer> <LocalLeader>M :call AgdaShowModule('')<CR>
-nnoremap <buffer> <LocalLeader>y :call AgdaWhyInScope('')<CR>
-nnoremap <buffer> <LocalLeader>h :call AgdaHelperFunction()<CR>
-nnoremap <buffer> <LocalLeader>d :call AgdaGotoAnnotation()<CR>
-nnoremap <buffer> <LocalLeader>m :AgdaMetas<CR>
-nnoremap <buffer> <LocalLeader>z :AgdaSearchAbout<CR>
-nnoremap <buffer> <LocalLeader>xr :AgdaRestart<CR>
-nnoremap <buffer> <LocalLeader>xq :AgdaQuitAgda<CR>
+nnoremap <buffer> <LocalLeader>l :<C-u>AgdaReload<CR>
+nnoremap <buffer> <LocalLeader>t :<C-u>call AgdaInfer()<CR>
+nnoremap <buffer> <LocalLeader>r :<C-u>call AgdaRefine(v:false)<CR>
+nnoremap <buffer> <LocalLeader>R :<C-u>call AgdaRefine(v:true)<CR>
+nnoremap <buffer> <LocalLeader>g :<C-u>call AgdaGive()<CR>
+nnoremap <buffer> <LocalLeader>c :<C-u>call AgdaMakeCase()<CR>
+nnoremap <buffer> <LocalLeader>a :<C-u>call AgdaAuto()<CR>
+nnoremap <buffer> <LocalLeader>e :<C-u>call AgdaShowContext(v:count)<CR>
+nnoremap <buffer> <LocalLeader>, :<C-u>call AgdaGoalAndContext(v:count)<CR>
+nnoremap <buffer> <LocalLeader>. :<C-u>call AgdaGoalAndContextAndInferred(v:count)<CR>
+nnoremap <buffer> <LocalLeader>; :<C-u>call AgdaGoalAndContextAndChecked(v:count)<CR>
+nnoremap <buffer> <LocalLeader>n :<C-u>call AgdaNormalize("IgnoreAbstract")<CR>
+nnoremap <buffer> <LocalLeader>N :<C-u>call AgdaNormalize("DefaultCompute")<CR>
+nnoremap <buffer> <LocalLeader>M :<C-u>call AgdaShowModule('')<CR>
+nnoremap <buffer> <LocalLeader>y :<C-u>call AgdaWhyInScope('')<CR>
+nnoremap <buffer> <LocalLeader>h :<C-u>call AgdaHelperFunction()<CR>
+nnoremap <buffer> <LocalLeader>d :<C-u>call AgdaGotoAnnotation()<CR>
+nnoremap <buffer> <LocalLeader>m :<C-u>AgdaMetas<CR>
+nnoremap <buffer> <LocalLeader>z :<C-u>AgdaSearchAbout<CR>
+nnoremap <buffer> <LocalLeader>xr :<C-u>AgdaRestart<CR>
+nnoremap <buffer> <LocalLeader>xq :<C-u>AgdaQuitAgda<CR>
 
 " Show/reload metas
 nnoremap <buffer> <C-e> :AgdaMetas<CR>
