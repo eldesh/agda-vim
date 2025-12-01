@@ -1,10 +1,10 @@
 import vim
 import re
-from functools import total_ordering
 import subprocess
-from functools import wraps
-from sys import version_info
 import logging
+from sys import version_info
+from functools import wraps, total_ordering
+from itertools import chain
 from enum import Enum, IntEnum, unique
 
 @total_ordering
@@ -167,35 +167,46 @@ def vim_func(vim_fname_or_func=None, conv=None):
         fname = func.__name__
         vim_fname = vim_fname or fname
         arg_names = func.__code__.co_varnames[:func.__code__.co_argcount]
-        arg_defaults = dict(zip(arg_names[-len(func.__defaults__ or ()):], func.__defaults__ or []))
+        arg_defaults = list(zip(arg_names[-len(func.__defaults__ or ()):], func.__defaults__ or []))
+        defaults_len = len(func.__defaults__ or ())
 
         @wraps(func)
         def from_vim(vim_arg_dict):
+            '''Convert vim arguments to python and call the function.'''
+            logger.debug("vim_arg_dict: %s" % vim_arg_dict)
             args = {}
-            for k in arg_names:
+            # Handle non-defaulted arguments.
+            for k in arg_names[:-defaults_len]:
+                val = vim_arg_dict[k]
+                if k in conv:
+                    val = conv[k](val)
+                args[k] = val
+            # Handle defaulted arguments.
+            for i, k in enumerate(arg_names[-defaults_len:]):
                 try:
                     val = vim_arg_dict[k]
                 except KeyError:
-                    val = arg_defaults[k]
-
+                    _key, val = arg_defaults[i]
                 if k in conv:
                     val = conv[k](val)
-
                 args[k] = val
             return func(**args)
 
         func.from_vim = from_vim
 
-        vim.command('''
-            function! {vim_fname}({vim_params})
+        vim_params = chain(arg_names[0:len(arg_names) - defaults_len], ['...'] if defaults_len > 0 else [])
+        vimfunc_def = '''
+            function! {vim_fname}({vim_signature})
                 {python_cmd} {fname}.from_vim(vim.eval(\'a:\'))
             endfunction
         '''.format(
             python_cmd=python_cmd,
             vim_fname=vim_fname,
-            vim_params=', '.join(arg_names),
+            vim_signature=', '.join(vim_params),
             fname=fname,
-        ))
+        )
+        # print("vimfunc_def: %s" % vimfunc_def)
+        vim.command(vimfunc_def)
         return func
 
     if callable(vim_fname_or_func):
