@@ -690,15 +690,16 @@ def AgdaShowContext(normalise):
     else:
         sendCommand('Cmd_context %s %d noRange "%s"' % (normalise.name, result[1], escape(result[0])))
 
-@vim_func
-def AgdaInfer():
+
+@vim_func(conv={'normalise': lambda x: NormaliseType.from_int(int(x))})
+def AgdaInferTypeMaybeToplevel(normalise):
     result = getHoleBodyAtCursor()
     if result is None:
-        sendCommand('Cmd_infer_toplevel %s "%s"' % (rewriteMode.value, escape(promptUser("Enter expression: "))))
+        sendCommand('Cmd_infer_toplevel %s "%s"' % (normalise.name, escape(promptUser("expression to type: "))))
     elif result[1] is None:
         print("Goal not loaded")
     else:
-        sendCommand('Cmd_infer %s %d noRange "%s"' % (rewriteMode.value, result[1], escape(result[0])))
+        sendCommand('Cmd_infer %s %d noRange "%s"' % (normalise.name, result[1], escape(result[0])))
 
 
 # As of 2.5.2, the options are "DefaultCompute", "IgnoreAbstract", "UseShowInstance"
@@ -730,12 +731,12 @@ def AgdaWhyInScope(termName):
         sendCommand('Cmd_why_in_scope %d noRange "%s"' % (result[1], escape(result[0])))
 
 
-@vim_func
-def AgdaSearchAbout(name: str = ''):
+@vim_func(conv={'normalise': lambda x: NormaliseType.from_int(int(x))})
+def AgdaSearchAbout(normalise, name: str = ''):
     '''Search About an identifier.'''
     cname = getWordAtCursor() if name == '' else name
     query = promptUser("Name: ") if cname == '' else cname
-    sendCommand('Cmd_search_about_toplevel %s "%s"' % (rewriteMode.value, query))
+    sendCommand('Cmd_search_about_toplevel %s "%s"' % (normalise.name, query))
 
 
 @vim_func
