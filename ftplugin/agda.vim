@@ -284,7 +284,7 @@ command! -buffer -nargs=0 AgdaSetRewriteModeSimplified exec s:python_cmd "setRew
 command! -buffer -nargs=0 AgdaSetRewriteModeHeadNormal exec s:python_cmd "setRewriteMode('HeadNormal')"
 command! -buffer -nargs=0 AgdaSetRewriteModeInstantiated exec s:python_cmd "setRewriteMode('Instantiated')"
 command! -buffer -nargs=0 AgdaQuitAgda call AgdaQuitAgda() | let s:agdavim_running_agda_path = ''
-command! -buffer -nargs=? AgdaSearchAbout call AgdaSearchAbout(<q-args>)
+command! -buffer -nargs=+ AgdaSearchAbout call AgdaSearchAbout(<f-args>)
 
 command! -buffer -nargs=? AgdaVimSetLoggingLevel
     \ if <q-args> !=# '' |
@@ -316,7 +316,7 @@ nnoremap <buffer> <LocalLeader>y :<C-u>call AgdaWhyInScope('')<CR>
 nnoremap <buffer> <LocalLeader>h :<C-u>call AgdaHelperFunction()<CR>
 nnoremap <buffer> <LocalLeader>d :<C-u>call AgdaGotoAnnotation()<CR>
 nnoremap <buffer> <LocalLeader>m :<C-u>AgdaMetas<CR>
-nnoremap <buffer> <LocalLeader>z :<C-u>AgdaSearchAbout<CR>
+nnoremap <buffer> <LocalLeader>z :<C-u>call AgdaSearchAbout(v:count)<CR>
 nnoremap <buffer> <LocalLeader>xr :<C-u>AgdaRestart<CR>
 nnoremap <buffer> <LocalLeader>xq :<C-u>AgdaQuitAgda<CR>
 
