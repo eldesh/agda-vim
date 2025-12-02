@@ -218,13 +218,16 @@ def vim_func(vim_fname_or_func=None, conv=None):
 
 
 def vim_bool(s):
-    if not s:
+    if isinstance(s, bool):
+        return s
+    if s == 'False':
         return False
-    elif s == 'False':
-        return False
-    elif s == 'True':
+    if s == 'True':
         return True
-    return bool(int(s))
+    raise ValueError("Cannot convert %s to bool" % s)
+
+def vim_normalise(s):
+    return NormaliseType.from_int(int(s))
 
 
 # start Agda
@@ -648,7 +651,7 @@ def AgdaAuto():
             sendCommand('Cmd_autoOne %d noRange "%s"' % (result[1], escape(result[0]) if result[0] != "?" else ""))
 
 
-@vim_func(conv={'normalise': lambda x: NormaliseType.from_int(int(x))})
+@vim_func(conv={'normalise': vim_normalise})
 def AgdaGoalAndContext(normalise):
     '''Shows the type of the goal at point and the current context'''
     result = getHoleBodyAtCursor()
@@ -660,7 +663,7 @@ def AgdaGoalAndContext(normalise):
         sendCommand('Cmd_goal_type_context %s %d noRange "%s"' % (normalise.name, result[1], escape(result[0])))
 
 
-@vim_func(conv={'normalise': lambda x: NormaliseType.from_int(int(x))})
+@vim_func(conv={'normalise': vim_normalise})
 def AgdaGoalAndContextAndInferred(normalise):
     '''Shows the context, the goal and the given expression's inferred type'''
     result = getHoleBodyAtCursor()
@@ -675,7 +678,7 @@ def AgdaGoalAndContextAndInferred(normalise):
         sendCommand('Cmd_goal_type_context_infer %s %d noRange "%s"' % (normalise.name, result[1], escape(result[0])))
 
 
-@vim_func(conv={'normalise': lambda x: NormaliseType.from_int(int(x))})
+@vim_func(conv={'normalise': vim_normalise})
 def AgdaGoalAndContextAndChecked(normalise):
     '''Shows the context, the goal and check the given expression's against the hole's type'''
     result = getHoleBodyAtCursor()
@@ -690,7 +693,7 @@ def AgdaGoalAndContextAndChecked(normalise):
         sendCommand('Cmd_goal_type_context_check %s %d noRange "%s"' % (normalise.name, result[1], escape(result[0])))
 
 
-@vim_func(conv={'normalise': lambda x: NormaliseType.from_int(int(x))})
+@vim_func(conv={'normalise': vim_normalise})
 def AgdaShowContext(normalise):
     '''Show the context of the goal at point'''
     result = getHoleBodyAtCursor()
@@ -702,7 +705,7 @@ def AgdaShowContext(normalise):
         sendCommand('Cmd_context %s %d noRange "%s"' % (normalise.name, result[1], escape(result[0])))
 
 
-@vim_func(conv={'normalise': lambda x: NormaliseType.from_int(int(x))})
+@vim_func(conv={'normalise': vim_normalise})
 def AgdaInferTypeMaybeToplevel(normalise):
     result = getHoleBodyAtCursor()
     if result is None:
@@ -742,7 +745,7 @@ def AgdaWhyInScope(termName):
         sendCommand('Cmd_why_in_scope %d noRange "%s"' % (result[1], escape(result[0])))
 
 
-@vim_func(conv={'normalise': lambda x: NormaliseType.from_int(int(x))})
+@vim_func(conv={'normalise': vim_normalise})
 def AgdaSearchAbout(normalise, name: str = ''):
     '''Search About an identifier.'''
     cname = getWordAtCursor() if name == '' else name
@@ -750,7 +753,7 @@ def AgdaSearchAbout(normalise, name: str = ''):
     sendCommand('Cmd_search_about_toplevel %s "%s"' % (normalise.name, query))
 
 
-@vim_func(conv={'normalise': lambda x: NormaliseType.from_int(int(x))})
+@vim_func(conv={'normalise': vim_normalise})
 def AgdaShowGoals(normalise):
     sendCommand('Cmd_metas %s' % normalise.name)
 
