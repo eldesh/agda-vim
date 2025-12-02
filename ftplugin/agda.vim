@@ -275,7 +275,7 @@ command! -buffer -nargs=0 AgdaToggleImplicitArguments exec s:python_cmd "sendCom
 command! -buffer -nargs=0 AgdaConstraints exec s:python_cmd "sendCommand('Cmd_constraints')"
 command! -buffer -nargs=1 AgdaShowGoals call AgdaShowGoals(<f-args>)
 command! -buffer -nargs=0 AgdaSolveAll exec s:python_cmd "sendCommand('Cmd_solveAll')"
-command! -buffer -nargs=1 AgdaShowModule call AgdaShowModule(<args>)
+command! -buffer -nargs=1 AgdaModuleContentsMaybeToplevel call AgdaModuleContentsMaybeToplevel(<args>)
 command! -buffer -nargs=1 AgdaWhyInScope call AgdaWhyInScope(<args>)
 command! -buffer -nargs=1 AgdaSetRewriteMode exec s:python_cmd "setRewriteMode('<args>')"
 command! -buffer -nargs=0 AgdaSetRewriteModeAsIs exec s:python_cmd "setRewriteMode('AsIs')"
@@ -311,7 +311,7 @@ nnoremap <buffer> <LocalLeader>. :<C-u>call AgdaGoalAndContextAndInferred(v:coun
 nnoremap <buffer> <LocalLeader>; :<C-u>call AgdaGoalAndContextAndChecked(v:count)<CR>
 nnoremap <buffer> <LocalLeader>n :<C-u>call AgdaNormalize("IgnoreAbstract")<CR>
 nnoremap <buffer> <LocalLeader>N :<C-u>call AgdaNormalize("DefaultCompute")<CR>
-nnoremap <buffer> <LocalLeader>M :<C-u>call AgdaShowModule('')<CR>
+nnoremap <buffer> <LocalLeader>o :<C-u>call AgdaModuleContentsMaybeToplevel('')<CR>
 nnoremap <buffer> <LocalLeader>y :<C-u>call AgdaWhyInScope('')<CR>
 nnoremap <buffer> <LocalLeader>h :<C-u>call AgdaHelperFunction()<CR>
 nnoremap <buffer> <LocalLeader>d :<C-u>call AgdaGotoAnnotation()<CR>

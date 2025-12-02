@@ -759,12 +759,12 @@ def AgdaShowGoals(normalise):
 
 
 @vim_func
-def AgdaShowModule(moduleName):
+def AgdaModuleContentsMaybeToplevel(moduleName):
     result = getHoleBodyAtCursor() if moduleName == '' else None
 
     if agdaVersion < AgdaVersion(2,4,2,0):
         if result is None:
-            moduleName = promptUser("Enter module name: ") if moduleName == '' else moduleName
+            moduleName = promptUser("Module name (empty for current module): ") if moduleName == '' else moduleName
             sendCommand('Cmd_show_module_contents_toplevel "%s"' % escape(moduleName))
         elif result[1] is None:
             print("Goal not loaded")
@@ -772,7 +772,7 @@ def AgdaShowModule(moduleName):
             sendCommand('Cmd_show_module_contents %d noRange "%s"' % (result[1], escape(result[0])))
     else:
         if result is None:
-            moduleName = promptUser("Enter module name: ") if moduleName == '' else moduleName
+            moduleName = promptUser("Module name (empty for current module): ") if moduleName == '' else moduleName
             sendCommand('Cmd_show_module_contents_toplevel %s "%s"' % (rewriteMode.value, escape(moduleName)))
         elif result[1] is None:
             print("Goal not loaded")
