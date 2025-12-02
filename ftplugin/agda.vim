@@ -277,12 +277,6 @@ command! -buffer -nargs=1 AgdaShowGoals call AgdaShowGoals(<f-args>)
 command! -buffer -nargs=0 AgdaSolveAll exec s:python_cmd "sendCommand('Cmd_solveAll')"
 command! -buffer -nargs=+ AgdaModuleContentsMaybeToplevel call AgdaModuleContentsMaybeToplevel(<f-args>)
 command! -buffer -nargs=1 AgdaWhyInScope call AgdaWhyInScope(<args>)
-command! -buffer -nargs=1 AgdaSetRewriteMode exec s:python_cmd "setRewriteMode('<args>')"
-command! -buffer -nargs=0 AgdaSetRewriteModeAsIs exec s:python_cmd "setRewriteMode('AsIs')"
-command! -buffer -nargs=0 AgdaSetRewriteModeNormalised exec s:python_cmd "setRewriteMode('Normalised')"
-command! -buffer -nargs=0 AgdaSetRewriteModeSimplified exec s:python_cmd "setRewriteMode('Simplified')"
-command! -buffer -nargs=0 AgdaSetRewriteModeHeadNormal exec s:python_cmd "setRewriteMode('HeadNormal')"
-command! -buffer -nargs=0 AgdaSetRewriteModeInstantiated exec s:python_cmd "setRewriteMode('Instantiated')"
 command! -buffer -nargs=0 AgdaQuitAgda call AgdaQuitAgda() | let s:agdavim_running_agda_path = ''
 command! -buffer -nargs=+ AgdaSearchAbout call AgdaSearchAbout(<f-args>)
 

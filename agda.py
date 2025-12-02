@@ -38,30 +38,6 @@ class AgdaVersion:
 
 
 @unique
-class RewriteMode(Enum):
-    AsIs = "AsIs"
-    Normalised = "Normalised"
-    Simplified = "Simplified"
-    HeadNormal = "HeadNormal"
-    Instantiated = "Instantiated"
-
-    @classmethod
-    def parse(cls, text: str) -> 'RewriteMode':
-        if cls.AsIs.value == text:
-            return cls.AsIs
-        elif cls.Normalised.value == text:
-            return cls.Normalised
-        elif cls.Simplified.value == text:
-            return cls.Simplified
-        elif cls.HeadNormal.value == text:
-            return cls.HeadNormal
-        elif cls.Instantiated.value == text:
-            return cls.Instantiated
-        else:
-            raise ValueError("Unknown RewriteMode: %s" % text)
-
-
-@unique
 class NormaliseType(IntEnum):
     Simplified = 0
     Instantiated = 1
@@ -275,8 +251,6 @@ agda = None
 goals = {}
 annotations = []
 
-rewriteMode = RewriteMode.Normalised
-
 # This technically needs to turn a string into a Haskell escaped string, buuuut just gonna cheat.
 def escape(s):
     return s.replace('\\', '\\\\').replace('"', '\\"').replace('\n','\\n') # keep '\\' case first
@@ -285,19 +259,11 @@ def escape(s):
 def unescape(s):
     return s.replace('\\\\','\x00').replace('\\"', '"').replace('\\n','\n').replace('\x00', '\\') # hacktastic
 
-def setRewriteMode(mode):
-    global rewriteMode
-    try:
-        rewriteMode = RewriteMode.parse(mode)
-    except ValueError:
-        rewriteMode = RewriteMode.Normalised
-
 def promptUser(msg):
     vim.command('call inputsave()')
     result = vim.eval('input("%s")' % msg)
     vim.command('call inputrestore()')
     return result
-
 
 def findGoals(goalList):
     global goals
