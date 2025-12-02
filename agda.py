@@ -257,6 +257,15 @@ def vim_bool(s):
         return True
     raise ValueError("Cannot convert %s to bool" % s)
 
+def vim_int_range(start, stop, step = 1):
+    r = (range(start, stop, step))
+    def inner(s):
+        val = int(s)
+        if val in r:
+            return val
+        raise ValueError("Value %s is not in range %s" % (val, r))
+    return inner
+
 def vim_compute_mode(s):
     return ComputeMode.from_int(int(s))
 
@@ -619,6 +628,14 @@ def AgdaLoadHighlightInfo(quiet):
 def AgdaGotoAnnotation():
     gotoAnnotation()
 
+@vim_func(conv={'arg': vim_int_range(0,3)})
+def AgdaDisplayImplicitArguments(arg: int):
+    if arg == 0:
+        return sendCommand('ToggleImplicitArgs')
+    if arg == 1:
+        return sendCommand('ShowImplicitArgs True')
+    if arg == 2:
+        return sendCommand('ShowImplicitArgs False')
 
 @vim_func
 def AgdaGive():
