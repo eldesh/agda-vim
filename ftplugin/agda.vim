@@ -321,8 +321,8 @@ nnoremap <buffer> <LocalLeader>xr :<C-u>AgdaRestart<CR>
 nnoremap <buffer> <LocalLeader>xq :<C-u>AgdaQuitAgda<CR>
 
 " Show/reload goals
-nnoremap <buffer> <C-e> :AgdaShowGoals<CR>
-inoremap <buffer> <C-e> <C-o>:AgdaShowGoals<CR>
+nnoremap <buffer> <C-e> :<C-u>call AgdaShowGoals(v:count)<CR>
+inoremap <buffer> <C-e> <C-o>:<C-u>call AgdaShowGoals(v:count)<CR>
 
 " Go to next/previous goal
 nnoremap <buffer> <silent> <C-g>  :let _s=@/<CR>/ {!\\| ?<CR>:let @/=_s<CR>2l
