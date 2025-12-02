@@ -91,9 +91,11 @@ class AgdaProcess:
     Attributes:
         _process (subprocess.Popen): The subprocess running the Agda process.
         _path (str): The file path to the Agda executable.
+        _version (AgdaVersion): The version of the Agda process.
     """
     _process: subprocess.Popen
     _path: str
+    _version: AgdaVersion
 
     def __init__(self, path: str) -> 'AgdaProcess':
         self._path = path
@@ -104,10 +106,20 @@ class AgdaProcess:
             stdout = subprocess.PIPE,
             universal_newlines = True
         )
+        self._version = AgdaVersion.parse(subprocess.run(
+            [self._path, '--version'],
+            capture_output=True,
+            text=True,
+            check=True
+        ).stdout.strip())
 
     @property
     def path(self) -> str:
         return self._path
+
+    @property
+    def version(self) -> AgdaVersion:
+        return self._version
 
     @property
     def stdin(self):
@@ -380,6 +392,7 @@ def gotoAnnotation():
     vim.command('%dgo' % pos)
 
 def interpretResponse(responses, quiet = False):
+    global agda
     global agdaVersion
     for response in responses:
         logger.debug('response: %s' % response)
@@ -388,8 +401,13 @@ def interpretResponse(responses, quiet = False):
             if quiet and '*Error*' in response: vim.command('cwindow')
             strings = re.findall(r'"((?:[^"\\]|\\.)*)"', response[len(tag):])
             if strings[0] == '*Agda Version*':
-                agdaVersion = AgdaVersion.parse(strings[1])
-                logger.debug('AgdaVersion: %s' % agdaVersion)
+                agda_mode_version = AgdaVersion.parse(strings[1])
+                logger.debug('AgdaVersion: mode(%s) executable(%s)' % (agda_mode_version, agda.version))
+                if agda.version != agda_mode_version:
+                    logger.error('Agda mode\'s version (%s) does not match that of %s (%s)'
+                                 % (agda_mode_version, agda.path, agda.version))
+                agdaVersion = agda.version
+
             if quiet: continue
             vim.command('call s:LogAgda("%s","%s","%s")'% (strings[0], strings[1], response.endswith('t)')))
         elif "(agda2-goals-action '" in response:
