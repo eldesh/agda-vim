@@ -612,7 +612,7 @@ def AgdaGive():
     elif result[1] is None:
         print("Goal not loaded")
     elif result[0] == "?":
-        sendCommand('Cmd_give %s %d noRange "%s"' % (useForce, result[1], escape(promptUser("Enter expression: "))))
+        sendCommand('Cmd_give %s %d noRange "%s"' % (useForce, result[1], escape(promptUser("expression to give: "))))
     else:
         sendCommand('Cmd_give %s %d noRange "%s"' % (useForce, result[1], escape(result[0])))
 
