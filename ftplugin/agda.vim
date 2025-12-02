@@ -313,7 +313,7 @@ nnoremap <buffer> <LocalLeader>n :<C-u>call AgdaNormalize("IgnoreAbstract")<CR>
 nnoremap <buffer> <LocalLeader>N :<C-u>call AgdaNormalize("DefaultCompute")<CR>
 nnoremap <buffer> <LocalLeader>o :<C-u>call AgdaModuleContentsMaybeToplevel(v:count)<CR>
 nnoremap <buffer> <LocalLeader>y :<C-u>call AgdaWhyInScope('')<CR>
-nnoremap <buffer> <LocalLeader>h :<C-u>call AgdaHelperFunction()<CR>
+nnoremap <buffer> <LocalLeader>h :<C-u>call AgdaHelperFunctionType(v:count)<CR>
 nnoremap <buffer> <LocalLeader>d :<C-u>call AgdaGotoAnnotation()<CR>
 nnoremap <buffer> <LocalLeader>m :<C-u>call AgdaShowGoals(v:count)<CR>
 nnoremap <buffer> <LocalLeader>z :<C-u>call AgdaSearchAbout(v:count)<CR>

@@ -85,6 +85,30 @@ class NormaliseType(IntEnum):
         raise ValueError("%s is not a valid NormaliseType" % text)
 
 
+@unique
+class NormaliseAsIsType(IntEnum):
+    AsIs = 0
+    Simplified = 1
+    Normalised = 2
+    HeadNormal = 3
+
+    @classmethod
+    def from_int(cls, value: int) -> 'NormaliseAsIsType':
+        return cls(value)
+
+    @classmethod
+    def parse(cls, text: str) -> 'NormaliseAsIsType':
+        if text == "AsIs":
+            return cls.AsIs
+        if text == "Simplified":
+            return cls.Simplified
+        if text == "Normalised":
+            return cls.Normalised
+        if text == "HeadNormal":
+            return cls.HeadNormal
+        raise ValueError("%s is not a valid NormaliseAsIsType" % text)
+
+
 class AgdaProcess:
     """Agda process wrapper class for managing an Agda subprocess.
 
@@ -241,6 +265,8 @@ def vim_bool(s):
 def vim_normalise(s):
     return NormaliseType.from_int(int(s))
 
+def vim_normalise_asis(s):
+    return NormaliseAsIsType.from_int(int(s))
 
 # start Agda
 # TODO: I'm pretty sure this will start an agda process per buffer which is less than desirable...
@@ -793,8 +819,8 @@ def AgdaModuleContentsMaybeToplevel(normalise, moduleName = ''):
             sendCommand('Cmd_show_module_contents %s %d noRange "%s"' % (normalise.name, result[1], escape(result[0])))
 
 
-@vim_func
-def AgdaHelperFunction():
+@vim_func(conv={'normalise': vim_normalise_asis})
+def AgdaHelperFunctionType(normalise):
     result = getHoleBodyAtCursor()
 
     if result is None:
@@ -802,9 +828,9 @@ def AgdaHelperFunction():
     elif result[1] is None:
         print("Goal not loaded")
     elif result[0] == "?":
-        sendCommand('Cmd_helper_function %s %d noRange "%s"' % (rewriteMode.value, result[1], escape(promptUser("Enter name for helper function: "))))
+        sendCommand('Cmd_helper_function %s %d noRange "%s"' % (normalise.name, result[1], escape(promptUser("Expression: "))))
     else:
-        sendCommand('Cmd_helper_function %s %d noRange "%s"' % (rewriteMode.value, result[1], escape(result[0])))
+        sendCommand('Cmd_helper_function %s %d noRange "%s"' % (normalise.name, result[1], escape(result[0])))
 
 @vim_func
 def AgdaVimSetLoggingLevel(level):
