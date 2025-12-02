@@ -38,6 +38,30 @@ class AgdaVersion:
 
 
 @unique
+class ComputeMode(IntEnum):
+    DefaultCompute = 0
+    IgnoreAbstract = 1
+    UseShowInstance = 2
+    HeadCompute = 3
+
+    @classmethod
+    def from_int(cls, value: int) -> 'ComputeMode':
+        return cls(value)
+
+    @classmethod
+    def parse(cls, text: str) -> 'ComputeMode':
+        if text == "DefaultCompute":
+            return cls.DefaultCompute
+        if text == "IgnoreAbstract":
+            return cls.IgnoreAbstract
+        if text == "UseShowInstance":
+            return cls.UseShowInstance
+        if text == "HeadCompute":
+            return cls.HeadCompute
+        raise ValueError("%s is not a valid ComputeMode" % text)
+
+
+@unique
 class NormaliseType(IntEnum):
     Simplified = 0
     Instantiated = 1
@@ -232,6 +256,9 @@ def vim_bool(s):
     if s == 'True':
         return True
     raise ValueError("Cannot convert %s to bool" % s)
+
+def vim_compute_mode(s):
+    return ComputeMode.from_int(int(s))
 
 def vim_normalise(s):
     return NormaliseType.from_int(int(s))
@@ -716,19 +743,27 @@ def AgdaInferTypeMaybeToplevel(normalise):
         sendCommand('Cmd_infer %s %d noRange "%s"' % (normalise.name, result[1], escape(result[0])))
 
 
-# As of 2.5.2, the options are "DefaultCompute", "IgnoreAbstract", "UseShowInstance"
-@vim_func
-def AgdaNormalize(unfoldAbstract):
-    if agda.version < AgdaVersion(2,5,2,0):
-        unfoldAbstract = str(unfoldAbstract == "DefaultCompute")
-
+@vim_func(conv={'computeMode': vim_compute_mode})
+def AgdaComputeNormalisedMaybeToplevel(computeMode):
     result = getHoleBodyAtCursor()
-    if result is None:
-        sendCommand('Cmd_compute_toplevel %s "%s"' % (unfoldAbstract, escape(promptUser("Enter expression: "))))
-    elif result[1] is None:
-        print("Goal not loaded")
+
+    if agda.version < AgdaVersion(2,5,2,0):
+        mode = computeMode == ComputeMode.DefaultCompute
+        if result is None:
+            prompt = promptUser("expression to normalise: ")
+            sendCommand('Cmd_compute_toplevel %s "%s"' % (mode, escape(prompt)))
+        elif result[1] is None:
+            print("Goal not loaded")
+        else:
+            sendCommand('Cmd_compute %s %d noRange "%s"' % (mode, result[1], escape(result[0])))
     else:
-        sendCommand('Cmd_compute %s %d noRange "%s"' % (unfoldAbstract, result[1], escape(result[0])))
+        if result is None:
+            prompt = promptUser("expression to normalise: ")
+            sendCommand('Cmd_compute_toplevel %s "%s"' % (computeMode.name, escape(prompt)))
+        elif result[1] is None:
+            print("Goal not loaded")
+        else:
+            sendCommand('Cmd_compute %s %d noRange "%s"' % (computeMode.name, result[1], escape(result[0])))
 
 
 @vim_func
