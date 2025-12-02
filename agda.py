@@ -771,8 +771,8 @@ def AgdaShowGoals(normalise):
     sendCommand('Cmd_metas %s' % normalise.name)
 
 
-@vim_func
-def AgdaModuleContentsMaybeToplevel(moduleName):
+@vim_func(conv={'normalise': vim_normalise})
+def AgdaModuleContentsMaybeToplevel(normalise, moduleName = ''):
     result = getHoleBodyAtCursor() if moduleName == '' else None
 
     if agda.version < AgdaVersion(2,4,2,0):
@@ -786,11 +786,11 @@ def AgdaModuleContentsMaybeToplevel(moduleName):
     else:
         if result is None:
             moduleName = promptUser("Module name (empty for current module): ") if moduleName == '' else moduleName
-            sendCommand('Cmd_show_module_contents_toplevel %s "%s"' % (rewriteMode.value, escape(moduleName)))
+            sendCommand('Cmd_show_module_contents_toplevel %s "%s"' % (normalise.name, escape(moduleName)))
         elif result[1] is None:
             print("Goal not loaded")
         else:
-            sendCommand('Cmd_show_module_contents %s %d noRange "%s"' % (rewriteMode.value, result[1], escape(result[0])))
+            sendCommand('Cmd_show_module_contents %s %d noRange "%s"' % (normalise.name, result[1], escape(result[0])))
 
 
 @vim_func
