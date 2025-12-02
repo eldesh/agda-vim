@@ -32,9 +32,9 @@ class AgdaVersion:
     @classmethod
     def parse(cls, text: str) -> 'AgdaVersion':
         '''Parse an Agda version string of the form 'Agda version X.Y.Z.W-ABC'.'''
-        agdaVersion = [int(c) for c in text[12:].split("-")[0].split('.')]
-        agdaVersion = agdaVersion + [0]*max(0, 4-len(agdaVersion))
-        return AgdaVersion(*agdaVersion)
+        version = [int(c) for c in text[12:].split("-")[0].split('.')]
+        version = version + [0]*max(0, 4-len(version))
+        return AgdaVersion(*version)
 
 
 @unique
@@ -249,8 +249,6 @@ agda = None
 goals = {}
 annotations = []
 
-agdaVersion = AgdaVersion(0, 0, 0, 0)
-
 rewriteMode = RewriteMode.Normalised
 
 # This technically needs to turn a string into a Haskell escaped string, buuuut just gonna cheat.
@@ -393,7 +391,6 @@ def gotoAnnotation():
 
 def interpretResponse(responses, quiet = False):
     global agda
-    global agdaVersion
     for response in responses:
         logger.debug('response: %s' % response)
         if response.startswith('(agda2-info-action ') or response.startswith('(agda2-info-action-and-copy '):
@@ -406,7 +403,6 @@ def interpretResponse(responses, quiet = False):
                 if agda.version != agda_mode_version:
                     logger.error('Agda mode\'s version (%s) does not match that of %s (%s)'
                                  % (agda_mode_version, agda.path, agda.version))
-                agdaVersion = agda.version
 
             if quiet: continue
             vim.command('call s:LogAgda("%s","%s","%s")'% (strings[0], strings[1], response.endswith('t)')))
@@ -491,8 +487,7 @@ def sendCommandLoadHighlightInfo(file, quiet):
     sendCommand('Cmd_load_highlighting_info "%s"' % escape(file), quiet = quiet)
 
 def sendCommandLoad(file, quiet):
-    global agdaVersion
-    if agdaVersion < AgdaVersion(2,5,0,0): # in 2.5 they changed it so Cmd_load takes commandline arguments
+    if agda.version < AgdaVersion(2,5,0,0): # in 2.5 they changed it so Cmd_load takes commandline arguments
         incpaths_str = ",".join(map(lambda x: x.decode('utf-8'), vim.vars['agdavim_agda_includepathlist']))
     else:
         incpaths_str = "\"-i\"," + ",\"-i\",".join(map(lambda x: x.decode('utf-8'), vim.vars['agdavim_agda_includepathlist']))
@@ -615,7 +610,7 @@ def AgdaGotoAnnotation():
 def AgdaGive():
     result = getHoleBodyAtCursor()
 
-    if agdaVersion < AgdaVersion(2,5,3,0):
+    if agda.version < AgdaVersion(2,5,3,0):
         useForce = ""
     else:
         useForce = "WithoutForce" # or WithForce
@@ -663,7 +658,7 @@ def AgdaAuto():
     elif result[1] is None:
         print("Goal not loaded")
     else:
-        if agdaVersion < AgdaVersion(2,6,0,0):
+        if agda.version < AgdaVersion(2,6,0,0):
             sendCommand('Cmd_auto %d noRange "%s"' % (result[1], escape(result[0]) if result[0] != "?" else ""))
         else:
             sendCommand('Cmd_autoOne %d noRange "%s"' % (result[1], escape(result[0]) if result[0] != "?" else ""))
@@ -737,7 +732,7 @@ def AgdaInferTypeMaybeToplevel(normalise):
 # As of 2.5.2, the options are "DefaultCompute", "IgnoreAbstract", "UseShowInstance"
 @vim_func
 def AgdaNormalize(unfoldAbstract):
-    if agdaVersion < AgdaVersion(2,5,2,0):
+    if agda.version < AgdaVersion(2,5,2,0):
         unfoldAbstract = str(unfoldAbstract == "DefaultCompute")
 
     result = getHoleBodyAtCursor()
@@ -780,7 +775,7 @@ def AgdaShowGoals(normalise):
 def AgdaModuleContentsMaybeToplevel(moduleName):
     result = getHoleBodyAtCursor() if moduleName == '' else None
 
-    if agdaVersion < AgdaVersion(2,4,2,0):
+    if agda.version < AgdaVersion(2,4,2,0):
         if result is None:
             moduleName = promptUser("Module name (empty for current module): ") if moduleName == '' else moduleName
             sendCommand('Cmd_show_module_contents_toplevel "%s"' % escape(moduleName))
