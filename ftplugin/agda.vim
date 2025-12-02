@@ -273,7 +273,7 @@ command! -buffer -nargs=0 AgdaShowImplicitArguments exec s:python_cmd "sendComma
 command! -buffer -nargs=0 AgdaHideImplicitArguments exec s:python_cmd "sendCommand('ShowImplicitArgs False')"
 command! -buffer -nargs=0 AgdaToggleImplicitArguments exec s:python_cmd "sendCommand('ToggleImplicitArgs')"
 command! -buffer -nargs=0 AgdaConstraints exec s:python_cmd "sendCommand('Cmd_constraints')"
-command! -buffer -nargs=? AgdaMetas call AgdaMetas(<q-args>)
+command! -buffer -nargs=1 AgdaShowGoals call AgdaShowGoals(<f-args>)
 command! -buffer -nargs=0 AgdaSolveAll exec s:python_cmd "sendCommand('Cmd_solveAll')"
 command! -buffer -nargs=1 AgdaShowModule call AgdaShowModule(<args>)
 command! -buffer -nargs=1 AgdaWhyInScope call AgdaWhyInScope(<args>)
@@ -315,16 +315,16 @@ nnoremap <buffer> <LocalLeader>M :<C-u>call AgdaShowModule('')<CR>
 nnoremap <buffer> <LocalLeader>y :<C-u>call AgdaWhyInScope('')<CR>
 nnoremap <buffer> <LocalLeader>h :<C-u>call AgdaHelperFunction()<CR>
 nnoremap <buffer> <LocalLeader>d :<C-u>call AgdaGotoAnnotation()<CR>
-nnoremap <buffer> <LocalLeader>m :<C-u>AgdaMetas<CR>
+nnoremap <buffer> <LocalLeader>m :<C-u>call AgdaShowGoals(v:count)<CR>
 nnoremap <buffer> <LocalLeader>z :<C-u>call AgdaSearchAbout(v:count)<CR>
 nnoremap <buffer> <LocalLeader>xr :<C-u>AgdaRestart<CR>
 nnoremap <buffer> <LocalLeader>xq :<C-u>AgdaQuitAgda<CR>
 
-" Show/reload metas
-nnoremap <buffer> <C-e> :AgdaMetas<CR>
-inoremap <buffer> <C-e> <C-o>:AgdaMetas<CR>
+" Show/reload goals
+nnoremap <buffer> <C-e> :AgdaShowGoals<CR>
+inoremap <buffer> <C-e> <C-o>:AgdaShowGoals<CR>
 
-" Go to next/previous meta
+" Go to next/previous goal
 nnoremap <buffer> <silent> <C-g>  :let _s=@/<CR>/ {!\\| ?<CR>:let @/=_s<CR>2l
 inoremap <buffer> <silent> <C-g>  <C-o>:let _s=@/<CR><C-o>/ {!\\| ?<CR><C-o>:let @/=_s<CR><C-o>2l
 

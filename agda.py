@@ -750,15 +750,9 @@ def AgdaSearchAbout(normalise, name: str = ''):
     sendCommand('Cmd_search_about_toplevel %s "%s"' % (normalise.name, query))
 
 
-@vim_func
-def AgdaMetas(mode = None):
-    if mode is None:
-        rewriteMode = RewriteMode.Normalised
-    try:
-        rewriteMode = RewriteMode.parse(mode)
-    except ValueError:
-        rewriteMode = RewriteMode.Normalised
-    sendCommand('Cmd_metas %s' % rewriteMode.value)
+@vim_func(conv={'normalise': lambda x: NormaliseType.from_int(int(x))})
+def AgdaShowGoals(normalise):
+    sendCommand('Cmd_metas %s' % normalise.name)
 
 
 @vim_func
