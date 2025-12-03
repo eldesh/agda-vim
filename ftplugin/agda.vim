@@ -264,6 +264,7 @@ function! AgdaRestart(agda_path)
 endfunction
 
 execute s:python_cmd . ' ' . 'import agdavim'
+execute s:python_cmd . ' ' . 'agdavim.log.init_logging()'
 
 command! -buffer -nargs=0 AgdaLoad call AgdaLoad(v:false)
 command! -buffer -nargs=0 AgdaShowVersion call AgdaShowVersion(v:false)

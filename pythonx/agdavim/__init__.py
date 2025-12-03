@@ -1,2 +1,13 @@
+from . import agda_process
+from . import agda_version
 from . import agda
-__all__ = ['agda']
+from . import protocol
+from . import log
+
+__all__ = [
+    'agda_process',
+    'agda_version',
+    'agda',
+    'protocol',
+    'log'
+]

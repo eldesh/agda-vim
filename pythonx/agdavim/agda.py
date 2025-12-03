@@ -1,195 +1,18 @@
 import vim
 import re
-import subprocess
 import logging
 from sys import version_info
-from functools import wraps, total_ordering
+from functools import wraps
 from itertools import chain
-from enum import Enum, IntEnum, unique
 
-@total_ordering
-class AgdaVersion:
-    _major: int
-    _minor: int
-    _patch: int
-    _build: int
-
-    def __init__(self, major, minor, patch, build):
-        self._major = major
-        self._minor = minor
-        self._patch = patch
-        self._build = build
-
-    def __eq__(self, other) -> bool:
-        return (self._major, self._minor, self._patch, self._build) == (other._major, other._minor, other._patch, other._build)
-
-    def __lt__(self, other) -> bool:
-        return (self._major, self._minor, self._patch, self._build) < (other._major, other._minor, other._patch, other._build)
-
-    def __str__(self) -> str:
-        return f"{self._major}.{self._minor}.{self._patch}.{self._build}"
-
-    @classmethod
-    def parse(cls, text: str) -> 'AgdaVersion':
-        '''Parse an Agda version string of the form 'Agda version X.Y.Z.W-ABC'.'''
-        version = [int(c) for c in text[12:].split("-")[0].split('.')]
-        version = version + [0]*max(0, 4-len(version))
-        return AgdaVersion(*version)
-
-
-@unique
-class ComputeMode(IntEnum):
-    DefaultCompute = 0
-    IgnoreAbstract = 1
-    UseShowInstance = 2
-    HeadCompute = 3
-
-    @classmethod
-    def from_int(cls, value: int) -> 'ComputeMode':
-        return cls(value)
-
-    @classmethod
-    def parse(cls, text: str) -> 'ComputeMode':
-        if text == "DefaultCompute":
-            return cls.DefaultCompute
-        if text == "IgnoreAbstract":
-            return cls.IgnoreAbstract
-        if text == "UseShowInstance":
-            return cls.UseShowInstance
-        if text == "HeadCompute":
-            return cls.HeadCompute
-        raise ValueError("%s is not a valid ComputeMode" % text)
-
-
-@unique
-class NormaliseType(IntEnum):
-    Simplified = 0
-    Instantiated = 1
-    Normalised = 2
-    HeadNormal = 3
-
-    @classmethod
-    def from_int(cls, value: int) -> 'NormaliseType':
-        return cls(value)
-
-    @classmethod
-    def parse(cls, text: str) -> 'NormaliseType':
-        if text == "Simplified":
-            return cls.Simplified
-        if text == "Instantiated":
-            return cls.Instantiated
-        if text == "Normalised":
-            return cls.Normalised
-        if text == "HeadNormal":
-            return cls.HeadNormal
-        raise ValueError("%s is not a valid NormaliseType" % text)
-
-
-@unique
-class NormaliseAsIsType(IntEnum):
-    AsIs = 0
-    Simplified = 1
-    Normalised = 2
-    HeadNormal = 3
-
-    @classmethod
-    def from_int(cls, value: int) -> 'NormaliseAsIsType':
-        return cls(value)
-
-    @classmethod
-    def parse(cls, text: str) -> 'NormaliseAsIsType':
-        if text == "AsIs":
-            return cls.AsIs
-        if text == "Simplified":
-            return cls.Simplified
-        if text == "Normalised":
-            return cls.Normalised
-        if text == "HeadNormal":
-            return cls.HeadNormal
-        raise ValueError("%s is not a valid NormaliseAsIsType" % text)
-
-
-class AgdaProcess:
-    """Agda process wrapper class for managing an Agda subprocess.
-
-    Attributes:
-        _process (subprocess.Popen): The subprocess running the Agda process.
-        _path (str): The file path to the Agda executable.
-        _version (AgdaVersion): The version of the Agda process.
-    """
-    _process: subprocess.Popen
-    _path: str
-    _version: AgdaVersion
-
-    def __init__(self, path: str) -> 'AgdaProcess':
-        self._path = path
-        self._process = subprocess.Popen(
-            [self._path, "--interaction"],
-            bufsize = 1,
-            stdin = subprocess.PIPE,
-            stdout = subprocess.PIPE,
-            universal_newlines = True
-        )
-        self._version = AgdaVersion.parse(subprocess.run(
-            [self._path, '--version'],
-            capture_output=True,
-            text=True,
-            check=True
-        ).stdout.strip())
-
-    @property
-    def path(self) -> str:
-        return self._path
-
-    @property
-    def version(self) -> AgdaVersion:
-        return self._version
-
-    @property
-    def stdin(self):
-        return self._process.stdin
-
-    @property
-    def stdout(self):
-        return self._process.stdout
-
-    def restart(self, path):
-        '''Terminates the current Agda process and starts a new one located at `path`.'''
-        self.stopWait()
-        self = AgdaProcess(path)
-
-    def stopWait(self):
-        '''Terminates the current Agda process and waits for it to exit. If it does not exit within 10 seconds, it is killed.'''
-        sendCommand('Cmd_exit')
-        try:
-            self._process.wait(timeout = 10)
-        except subprocess.TimeoutExpired:
-            logger.error("Agda process did not exit in time, killing it.")
-            self._process.kill()
-            self._process.wait()
-        self._process = None
-        self._path = None
-        self._version = None
-
+from .agda_process import AgdaProcess
+from .agda_version import AgdaVersion
+from .protocol import ComputeMode, NormaliseType, NormaliseAsIsType
+from . import log
 
 python_cmd = 'py' if version_info.major == 2 else 'py3'
 
-logger = logging.getLogger('agda.py')
-logging.basicConfig(level=logging.WARNING)
-logger.setLevel(logging.WARNING)
-
-def logging_level_from_str(x):
-    if x is None:
-        return None
-    try:
-        return int(x)
-    except ValueError:
-        return getattr(logging, x, None)
-
-
-def logging_level_from(x):
-    return logging_level_from_str(x.decode('utf-8') if isinstance(x, bytes) else x)
-
+logger = logging.getLogger(__name__)
 
 def vim_func(vim_fname_or_func=None, conv=None):
     '''Expose a python function to vim, optionally overriding its name.'''
@@ -849,9 +672,8 @@ def AgdaHelperFunctionType(normalise):
 
 @vim_func
 def AgdaVimSetLoggingLevel(level):
-    logger.setLevel(level)
-    logging.basicConfig(level=level)
-    print("Set logging level to %s" % logging.getLevelName(level))
+    log.set_logging_level(level=level)
+    print("Set logging level to %s" % level)
 
 
 ## }
