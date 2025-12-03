@@ -263,7 +263,7 @@ function! AgdaRestart(agda_path)
     let s:agdavim_running_agda_path = g:agdavim_agda_path
 endfunction
 
-execute s:python_loadfile . resolve(expand('<sfile>:p:h') . '/../agda.py')
+execute s:python_cmd . ' ' . 'import agdavim'
 
 command! -buffer -nargs=0 AgdaLoad call AgdaLoad(v:false)
 command! -buffer -nargs=0 AgdaShowVersion call AgdaShowVersion(v:false)

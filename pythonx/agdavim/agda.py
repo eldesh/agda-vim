@@ -195,6 +195,7 @@ def vim_func(vim_fname_or_func=None, conv=None):
     '''Expose a python function to vim, optionally overriding its name.'''
 
     def wrap_func(func, vim_fname, conv):
+        module = func.__module__
         fname = func.__name__
         vim_fname = vim_fname or fname
         arg_names = func.__code__.co_varnames[:func.__code__.co_argcount]
@@ -228,15 +229,16 @@ def vim_func(vim_fname_or_func=None, conv=None):
         vim_params = chain(arg_names[0:len(arg_names) - defaults_len], ['...'] if defaults_len > 0 else [])
         vimfunc_def = '''
             function! {vim_fname}({vim_signature})
-                {python_cmd} {fname}.from_vim(vim.eval(\'a:\'))
+                {python_cmd} {module}.{fname}.from_vim(vim.eval(\'a:\'))
             endfunction
         '''.format(
             python_cmd=python_cmd,
             vim_fname=vim_fname,
             vim_signature=', '.join(vim_params),
             fname=fname,
+            module=module
         )
-        # print("vimfunc_def: %s" % vimfunc_def)
+        #print("vimfunc_def: %s" % vimfunc_def)
         vim.command(vimfunc_def)
         return func
 
