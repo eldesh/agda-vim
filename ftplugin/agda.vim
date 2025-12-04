@@ -49,9 +49,17 @@ if !exists('g:agdavim_logging_level')
     let g:agdavim_logging_level = 'WARNING'
 endif
 
+function! s:AgdaSetMakePrg() abort
+    let &l:makeprg =
+        \ shellescape(s:agdavim_running_agda_path)
+        \ . ' --vim -i '
+        \ . join(g:agdavim_agda_includepathlist, ' -i ')
+        \ . ' %'
+endfunction
+
 let g:agdavim_agda_includepathlist = deepcopy(['.'] + get(g:, 'agda_extraincpaths', []))
 call map(g:agdavim_agda_includepathlist, ' ''"'' . v:val . ''"'' ')
-let &l:makeprg = 'agda --vim ' . '-i ' . join(g:agdavim_agda_includepathlist, ' -i ') . ' %'
+call s:AgdaSetMakePrg()
 let b:undo_ftplugin .= ' | setlocal makeprg<'
 
 if get(g:, 'agdavim_includeutf8_mappings', v:true)
@@ -261,6 +269,7 @@ function! AgdaRestart(agda_path)
         call s:LogAgda('Agda restart', 'Restarting Agda executable: ' . g:agdavim_agda_path, v:false)
     endif
     let s:agdavim_running_agda_path = g:agdavim_agda_path
+    call s:AgdaSetMakePrg()
 endfunction
 
 execute s:python_cmd . ' ' . 'import agdavim'
@@ -268,7 +277,7 @@ execute s:python_cmd . ' ' . 'agdavim.log.init_logging()'
 
 command! -buffer -nargs=0 AgdaLoad call AgdaLoad(v:false)
 command! -buffer -nargs=0 AgdaShowVersion call AgdaShowVersion(v:false)
-command! -buffer -nargs=0 AgdaReload silent! make!|redraw!
+command! -buffer -nargs=0 AgdaReload call s:AgdaSetMakePrg() | silent! make! | redraw!
 command! -buffer -nargs=0 AgdaShowRunningPath call AgdaShowRunningPath()
 command! -buffer -nargs=? AgdaDisplayImplicitArguments call AgdaDisplayImplicitArguments(<f-args>)
 command! -buffer -nargs=0 AgdaToggleImplicitArguments call AgdaDisplayImplicitArguments(0)
@@ -327,9 +336,9 @@ inoremap <buffer> <silent> <C-g>  <C-o>:let _s=@/<CR><C-o>/ {!\\| ?<CR><C-o>:let
 nnoremap <buffer> <silent> <C-y>  2h:let _s=@/<CR>? {!\\| \?<CR>:let @/=_s<CR>2l
 inoremap <buffer> <silent> <C-y>  <C-o>2h<C-o>:let _s=@/<CR><C-o>? {!\\| \?<CR><C-o>:let @/=_s<CR><C-o>2l
 
-AgdaReload
 AgdaVimSetLoggingLevel
 AgdaRestart
+AgdaReload
 
 endif
 
