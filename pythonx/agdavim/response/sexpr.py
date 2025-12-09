@@ -113,7 +113,7 @@ def parse(s: str) -> SExpr:
             elif len(res) == 3 and res[0] != '.' and res[1] == '.' and res[2] != '.':
                 return Pair(res[0], res[2])
             else:
-                raise ValueError("Invalid dotted pair syntax: %s" % quoted_expr)
+                raise ValueError("Invalid dotted pair syntax: %s" % res)
         else:
             raise ValueError("Extra token after top-level list: %s..." % extra)
     elif tok.kind == TokenKind.STRING:
