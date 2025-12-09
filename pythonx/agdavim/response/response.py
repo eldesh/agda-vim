@@ -117,6 +117,10 @@ class VerboseResponse(Response):
             return cls(parsed[1])
         raise ParseError(ss, cls)
 
+    @property
+    def message(self) -> str:
+        return self._message
+
 
 class InfoActionResponse(Response):
     TAG: ClassVar[str] = "agda2-info-action"
@@ -147,6 +151,18 @@ class InfoActionResponse(Response):
             if len(parsed) == 4:
                 return cls(parsed[1], parsed[2], parsed[3])
         raise ParseError(ss, cls)
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def text(self) -> str:
+        return self._text
+
+    @property
+    def append(self) -> Union[str, sexpr.Nil]:
+        return self._append
 
 
 class InfoActionAndCopyResponse(Response):
@@ -180,6 +196,18 @@ class InfoActionAndCopyResponse(Response):
         print("Failed to parse InfoActionAndCopyResponse: %s" % parsed)
         raise ParseError(ss, cls)
 
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def text(self) -> str:
+        return self._text
+
+    @property
+    def append(self) -> Union[str, sexpr.Nil]:
+        return self._append
+
 
 class StatusActionResponse(Response):
     TAG: ClassVar[str] = "agda2-status-action"
@@ -201,6 +229,10 @@ class StatusActionResponse(Response):
             and isinstance(parsed[1], str)):
             return cls(parsed[1])
         raise ParseError(ss, cls)
+
+    @property
+    def status(self) -> str:
+        return self._status
 
 
 @unique
@@ -262,6 +294,14 @@ class HighlightAddAnnotationsResponse(Response):
             else:
                 return cls(remove, parsed[2])
         raise ParseError(ss, cls)
+
+    @property
+    def removeHighlighting(self) -> RemoveTokenBasedHighlighting:
+        return self._removeHighlighting
+
+    @property
+    def annotations(self) -> Optional[sexpr.SExpr]:
+        return self._annotations
 
 
 @dataclass(frozen=True, slots=True)
@@ -346,6 +386,15 @@ class GiveActionResponse(Response):
             giveResult = give_result_from_str(parsed[2])
             return cls(interactionId, giveResult)
         raise ParseError(ss, cls)
+
+    @property
+    def interactionId(self) -> InteractionId:
+        return self._interactionId
+
+    @property
+    def giveResult(self) -> GiveResult:
+        return self._giveResult
+
 
 class GoalsActionResponse(Response):
     TAG: ClassVar[str] = "agda2-goals-action"
