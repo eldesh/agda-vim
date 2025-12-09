@@ -4,15 +4,20 @@ import logging
 from sys import version_info
 from functools import wraps
 from itertools import chain
+from typing import Iterator
 
 from .agda_process import AgdaProcess
 from .agda_version import AgdaVersion
 from .protocol import ComputeMode, NormaliseType, NormaliseAsIsType
 from . import log
+from . import response
+from .response import InfoActionResponse, InfoActionAndCopyResponse, GoalsActionResponse, GiveActionResponse, MakeCaseActionResponse, MakeCaseActionExtendlamResponse, HighlightAddAnnotationsResponse, GiveString
 
 python_cmd = 'py' if version_info.major == 2 else 'py3'
 
 logger = logging.getLogger(__name__)
+
+AGDA2_OUTPUT_PROMPT: str = "Agda2> "
 
 def vim_func(vim_fname_or_func=None, conv=None):
     '''Expose a python function to vim, optionally overriding its name.'''
@@ -180,13 +185,18 @@ def findGoal(row, col):
     logger.debug('findGoal (not found) in %s: (%d,%d)' % (goals, row, col))
     return None
 
-def getOutput():
-    line = agda.stdout.readline()[7:] # get rid of the "Agda2> " prompt
-    lines = []
+
+def getOutput() -> Iterator[response.Response]:
+    line = agda.stdout.readline()
+    if not line.startswith(AGDA2_OUTPUT_PROMPT):
+        logger.warning("Unexpected Agda output: not startswith %s: %s" % (AGDA2_OUTPUT_PROMPT, line))
+    else:
+        line = line[len(AGDA2_OUTPUT_PROMPT):]
+
     while not line.startswith('Agda2> cannot read') and line != "":
-        lines.append(line)
+        yield response.parse_response(line)
         line = agda.stdout.readline()
-    return lines
+
 
 # This is not very efficient presumably.
 def c2b(n):
@@ -241,24 +251,30 @@ def interpretResponse(responses, quiet = False):
     global agda
     for response in responses:
         logger.debug('response: %s' % response)
-        if response.startswith('(agda2-info-action ') or response.startswith('(agda2-info-action-and-copy '):
-            tag = '(agda2-info-action ' if response.startswith('(agda2-info-action ') else '(agda2-info-action-and-copy '
-            if quiet and '*Error*' in response: vim.command('cwindow')
-            strings = re.findall(r'"((?:[^"\\]|\\.)*)"', response[len(tag):])
+        if isinstance(response, InfoActionResponse) or isinstance(response, InfoActionAndCopyResponse):
+            if quiet and '*Error*' == response.name: vim.command('cwindow')
+            strings = [response.name, response.text]
             if strings[0] == '*Agda Version*':
                 agda_mode_version = AgdaVersion.parse(strings[1])
                 logger.debug('AgdaVersion: mode(%s) executable(%s)' % (agda_mode_version, agda.version))
                 if agda.version != agda_mode_version:
                     logger.error('Agda mode\'s version (%s) does not match that of %s (%s)'
                                  % (agda_mode_version, agda.path, agda.version))
-
             if quiet: continue
-            vim.command('call s:LogAgda("%s","%s","%s")'% (strings[0], strings[1], response.endswith('t)')))
-        elif "(agda2-goals-action '" in response:
-            findGoals([int(s) for s in re.findall(r'(\d+)', response[response.index("agda2-goals-action '")+21:])])
-        elif "(agda2-make-case-action-extendlam '" in response:
-            response = response.replace("?", "{!   !}") # this probably isn't safe
-            cases = re.findall(r'"((?:[^"\\]|\\.)*)"', response[response.index("agda2-make-case-action-extendlam '")+34:])
+            logger.debug('call s:LogAgda(%s,%s,%s)' % (strings[0], strings[1], 'v:true' if response.append else 'v:false'))
+            vim.command('call s:LogAgda(%s,%s,%s)' % (strings[0], strings[1], 'v:true' if response.append else 'v:false'))
+
+        elif isinstance(response, GoalsActionResponse):
+            findGoals(response.goals)
+
+        elif isinstance(response, MakeCaseActionExtendlamResponse):
+            newcls = [ cls.replace("?", "{!   !}") for cls in response.newcls ] # this probably isn't safe
+
+            # ss = ' \'("z {true} → ?" "z {false} → ?")))'
+            # >>> re.findall(r'"((?:[^"\\]|\\.)*)"', ss)
+            # ['z {true} → ?', 'z {false} → ?']
+            cases = newcls
+
             col = vim.current.window.cursor[1]
             line = vim.current.line
 
@@ -293,32 +309,27 @@ def interpretResponse(responses, quiet = False):
             f = vim.current.buffer.name
             sendCommandLoad(f, quiet)
             break
-        elif "(agda2-make-case-action '" in response:
-            logger.debug('response(bytes): %s' % response.encode('utf-8'))
-            response = response.replace("?", "{!   !}") # this probably isn't safe
-            cases = re.findall(r'"((?:[^"\\]|\\.)*)"', response[response.index("agda2-make-case-action '")+24:])
+
+        elif isinstance(response, MakeCaseActionResponse):
+            # '''((last . 2) . (agda2-make-case-action '("... | ♭ = ?" "... | B' `→ B'' = ?")))'''
+            newcls = [ cls.replace("?", "{!   !}") for cls in response.newcls ] # this probably isn't safe
+            cases = newcls
             row = vim.current.window.cursor[0]
-            logger.debug('row: %s' % row)
             prefix = re.match(r'[ \t]*', vim.current.line).group()
-            logger.debug('prefix: "%s"' % prefix)
             vim.current.buffer[row-1:row] = [prefix + case for case in cases]
-            logger.debug('vim.current.buffer[%d]: %s' % (row-1, vim.current.buffer[row-1]))
             f = vim.current.buffer.name
-            logger.debug('f: %s' % f)
             sendCommandLoad(f, quiet)
             break
-        elif response.startswith('(agda2-give-action '):
-            response = response.replace("?", "{!   !}")
-            logger.debug('response: %s' % response)
-            logger.debug('response(bytes): %s' % response.encode('utf-8'))
-            match = re.search(r'(\d+)\s+"((?:[^"\\]|\\.)*)"', response[19:])
-            logger.debug('match: %s' % match)
-            logger.debug('match.group(2): %s' % match.group(2))
-            replaceHole(unescape(match.group(2)))
+
+        elif isinstance(response, GiveActionResponse):
+            giveResult = response.giveResult.replace("?", "{!   !}") if isinstance(response.giveResult, GiveString) else response.giveResult
+            replaceHole(unescape(giveResult))
+
         # elif response.startswith('(agda2-highlight-clear)'):
             # pass # Maybe do something with this.
-        elif response.startswith('(agda2-highlight-add-annotations '):
+        elif isinstance(response, HighlightAddAnnotationsResponse):
             parseAnnotation(response)
+
         else:
             pass # print(response)
 
