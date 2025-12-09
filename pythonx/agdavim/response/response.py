@@ -20,26 +20,28 @@ class ParseError(Exception):
     def __str__(self):
         return "Failed to parse %s from data: %s" % (self._cls.__name__, self._data)
 
+
 class Response(ABC):
     TAG: ClassVar[str]
 
     @classmethod
     def tag(cls) -> str:
         return cls.TAG
-    
+
     @property
     def tag(self) -> str:
         return type(self).TAG
+
 
 class ExitDoneResponse(Response):
     TAG: ClassVar[str] = "agda2-exit-done"
 
     def __init__(self):
         super().__init__()
-    
+
     def __str__(self):
         return "(" + self.tag + ")"
-    
+
     @classmethod
     def parse(cls, str) -> 'ExitDoneResponse':
         if sexpr.parse(str) == [cls.TAG]:
@@ -52,10 +54,10 @@ class AbortDoneResponse(Response):
 
     def __init__(self):
         super().__init__()
-    
+
     def __str__(self):
         return "(" + self.tag + ")"
-    
+
     @classmethod
     def parse(cls, str) -> 'AbortDoneResponse':
         if sexpr.parse(str) == [cls.TAG]:
@@ -77,7 +79,7 @@ class HighlightClearResponse(Response):
         if sexpr.parse(str) == [cls.TAG]:
             return cls()
         raise ParseError(str, cls)
-        
+
 
 class HighlightLoadAndDeleteActionResponse(Response):
     TAG: ClassVar[str] = "agda2-highlight-load-and-delete-action"
@@ -103,7 +105,7 @@ class VerboseResponse(Response):
     def __init__(self, message: str):
         super().__init__()
         self._message = message
-    
+
     def __str__(self):
         return '(%s %s)' % (self.tag, self._message)
 
@@ -134,7 +136,7 @@ class InfoActionResponse(Response):
         self._name = name
         self._text = text
         self._append = append
-    
+
     def __str__(self):
         return '(%s %s %s %s)' % (self.tag, self._name, self._text, self._append)
 
@@ -177,7 +179,7 @@ class InfoActionAndCopyResponse(Response):
         self._name = name
         self._text = text
         self._append = append
-    
+
     def __str__(self):
         return '(%s %s %s %s)' % (self.tag, self._name, self._text, self._append)
 
@@ -216,10 +218,10 @@ class StatusActionResponse(Response):
     def __init__(self, status: str):
         super().__init__()
         self._status = status
-    
+
     def __str__(self):
         return '(%s %s)' % (self.tag, self._status)
-    
+
     @classmethod
     def parse(cls, ss) -> 'StatusActionResponse':
         parsed = sexpr.parse(ss)
@@ -266,7 +268,7 @@ class HighlightAddAnnotationsResponse(Response):
         super().__init__()
         self._removeHighlighting = removeHighlighting
         self._annotations = annotations
-    
+
     def __str__(self):
         remove = "remove" if self._removeHighlighting == RemoveTokenBasedHighlighting.RemoveHighlighting else sexpr.NIL
         if self._annotations is None:
@@ -319,7 +321,7 @@ class InteractionId:
 @dataclass(frozen=True, slots=True)
 class GiveString:
     text: str
-    
+
     def __str__(self):
         return self.text
 
@@ -328,7 +330,7 @@ class GiveString:
 class GiveParen:
     def __str__(self):
         return '\'paren'
-    
+
     @classmethod
     def parse(cls, ss: str) -> 'GiveParen':
         if ss == '\'paren':
@@ -365,12 +367,12 @@ class GiveActionResponse(Response):
 
     _interactionId: InteractionId
     _giveResult: GiveResult
-    
+
     def __init__(self, interactionId: InteractionId, giveResult: GiveResult):
         super().__init__()
         self._interactionId = interactionId
         self._giveResult = giveResult
-    
+
     def __str__(self):
         return '(%s %s %s)' % (self.tag, self._interactionId, self._giveResult)
 
@@ -401,7 +403,7 @@ class GoalsActionResponse(Response):
 
     _priority: Optional[int]
     _goals: List[int]
-    
+
     def __init__(self, priority: Optional[int], goals: List[int]):
         super().__init__()
         self._priority = priority
@@ -449,12 +451,13 @@ class GoalsActionResponse(Response):
             return cls(priority, goals)
         raise ParseError(ss, cls)
 
+
 class MakeCaseActionResponse(Response):
     TAG: ClassVar[str] = "agda2-make-case-action"
 
     _priority: Optional[int]
     _newcls: List[str]
-    
+
     def __init__(self, priority: Optional[int], newcls: List[str]):
         super().__init__()
         self._priority = priority
@@ -491,7 +494,7 @@ class MakeCaseActionResponse(Response):
             cmd = parsed.cdr
         else:
             cmd = parsed
-    
+
         if (isinstance(cmd, list)
             and len(cmd) == 2
             and cmd[0] == cls.TAG
@@ -503,12 +506,13 @@ class MakeCaseActionResponse(Response):
             return cls(priority, newcls)
         raise ParseError(ss, cls)
 
+
 class MakeCaseActionExtendlamResponse(Response):
     TAG: ClassVar[str] = "agda2-make-case-action-extendlam"
 
     _priority: Optional[int]
     _newcls: List[str]
-    
+
     def __init__(self, priority: Optional[int], newcls: List[str]):
         super().__init__()
         self._priority = priority
@@ -557,12 +561,13 @@ class MakeCaseActionExtendlamResponse(Response):
             return cls(priority, newcls)
         raise ParseError(ss, cls)
 
+
 class SolveAllActionResponse(Response):
     TAG: ClassVar[str] = "agda2-solveAll-action"
 
     _priority: Optional[int]
     _solutions: List[Union[int, str]]
-    
+
     def __init__(self, priority: Optional[int], solutions: List[Union[int, str]]):
         super().__init__()
         self._priority = priority
@@ -612,13 +617,14 @@ class SolveAllActionResponse(Response):
             return cls(priority, solutions)
         raise ParseError(ss, cls)
 
+
 class MaybeGotoResponse(Response):
     TAG: ClassVar[str] = "agda2-maybe-goto"
 
     _priority: Optional[int]
     _filePath: str
     _position: int
-    
+
     def __init__(self, priority: Optional[int], filePath: str, position: int):
         super().__init__()
         self._priority = priority
