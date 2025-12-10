@@ -6,6 +6,8 @@ from abc import ABC, abstractmethod
 import logging
 
 from . import sexpr
+Symbol = sexpr.Symbol
+Pair = sexpr.Pair
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +34,10 @@ class Response(ABC):
     def tag(self) -> str:
         return type(self).TAG
 
+    @abstractmethod
+    def to_sexpr(self) -> sexpr.SExpr:
+        raise NotImplementedError(self.__class__)
+
 
 class ExitDoneResponse(Response):
     TAG: ClassVar[str] = "agda2-exit-done"
@@ -40,11 +46,14 @@ class ExitDoneResponse(Response):
         super().__init__()
 
     def __str__(self):
-        return "(" + self.tag + ")"
+        return sexpr.format(self.to_sexpr())
+
+    def to_sexpr(self) -> sexpr.SExpr:
+        return [Symbol(self.TAG)]
 
     @classmethod
     def parse(cls, str) -> 'ExitDoneResponse':
-        if sexpr.parse(str) == [cls.TAG]:
+        if sexpr.parse(str) == [Symbol(cls.TAG)]:
             return cls()
         raise ParseError(str, cls)
 
@@ -56,11 +65,14 @@ class AbortDoneResponse(Response):
         super().__init__()
 
     def __str__(self):
-        return "(" + self.tag + ")"
+        return sexpr.format(self.to_sexpr())
+
+    def to_sexpr(self) -> sexpr.SExpr:
+        return [Symbol(self.TAG)]
 
     @classmethod
     def parse(cls, str) -> 'AbortDoneResponse':
-        if sexpr.parse(str) == [cls.TAG]:
+        if sexpr.parse(str) == [Symbol(cls.TAG)]:
             return cls()
         raise ParseError(str, cls)
 
@@ -72,11 +84,14 @@ class HighlightClearResponse(Response):
         super().__init__()
 
     def __str__(self):
-        return '(' + self.tag + ')'
+        return sexpr.format(self.to_sexpr())
+
+    def to_sexpr(self) -> sexpr.SExpr:
+        return [Symbol(self.TAG)]
 
     @classmethod
     def parse(cls, str) -> 'HighlightClearResponse':
-        if sexpr.parse(str) == [cls.TAG]:
+        if sexpr.parse(str) == [Symbol(cls.TAG)]:
             return cls()
         raise ParseError(str, cls)
 
@@ -88,11 +103,14 @@ class HighlightLoadAndDeleteActionResponse(Response):
         super().__init__()
 
     def __str__(self):
-        return '(' + self.tag + ')'
+        return sexpr.format(self.to_sexpr())
+
+    def to_sexpr(self) -> sexpr.SExpr:
+        return [Symbol(self.TAG)]
 
     @classmethod
     def parse(cls, str) -> 'HighlightLoadAndDeleteActionResponse':
-        if sexpr.parse(str) == [cls.TAG]:
+        if sexpr.parse(str) == [Symbol(cls.TAG)]:
             return cls()
         raise ParseError(str, cls)
 
@@ -107,14 +125,17 @@ class VerboseResponse(Response):
         self._message = message
 
     def __str__(self):
-        return '(%s %s)' % (self.tag, self._message)
+        return sexpr.format(self.to_sexpr())
+
+    def to_sexpr(self) -> sexpr.SExpr:
+        return [Symbol(self.TAG), self._message]
 
     @classmethod
     def parse(cls, ss) -> 'VerboseResponse':
         parsed = sexpr.parse(ss)
         if (isinstance(parsed, list)
             and len(parsed) == 2
-            and parsed[0] == cls.TAG
+            and parsed[0] == Symbol(cls.TAG)
             and isinstance(parsed[1], str)):
             return cls(parsed[1])
         raise ParseError(ss, cls)
@@ -138,14 +159,17 @@ class InfoActionResponse(Response):
         self._append = append
 
     def __str__(self):
-        return '(%s %s "%s" %s)' % (self.tag, self._name, self._text, 't' if self._append else sexpr.NIL)
+        return sexpr.format(self.to_sexpr())
+
+    def to_sexpr(self) -> sexpr.SExpr:
+        return [Symbol(self.TAG), self._name, self._text, 't' if self._append else sexpr.NIL]
 
     @classmethod
     def parse(cls, ss) -> 'InfoActionResponse':
         parsed = sexpr.parse(ss)
         if (isinstance(parsed, list)
             and len(parsed) == 4
-            and parsed[0] == cls.TAG
+            and parsed[0] == Symbol(cls.TAG)
             and isinstance(parsed[1], str)
             and isinstance(parsed[2], str)
             and (isinstance(parsed[3], sexpr.Nil)
@@ -180,14 +204,17 @@ class InfoActionAndCopyResponse(Response):
         self._append = append
 
     def __str__(self):
-        return '(%s %s %s %s)' % (self.tag, self._name, self._text, self._append)
+        return sexpr.format(self.to_sexpr())
+
+    def to_sexpr(self) -> sexpr.SExpr:
+        return [Symbol(self.TAG), self._name, self._text, self._append]
 
     @classmethod
     def parse(cls, ss) -> 'InfoActionAndCopyResponse':
         parsed = sexpr.parse(ss)
         if (isinstance(parsed, list)
             and 3 <= len(parsed) <= 4
-            and parsed[0] == cls.TAG
+            and parsed[0] == Symbol(cls.TAG)
             and isinstance(parsed[1], str)
             and isinstance(parsed[2], str)):
             if len(parsed) == 3:
@@ -219,14 +246,17 @@ class StatusActionResponse(Response):
         self._status = status
 
     def __str__(self):
-        return '(%s %s)' % (self.tag, self._status)
+        return sexpr.format(self.to_sexpr())
+
+    def to_sexpr(self) -> sexpr.SExpr:
+        return [Symbol(self.TAG), self._status]
 
     @classmethod
     def parse(cls, ss) -> 'StatusActionResponse':
         parsed = sexpr.parse(ss)
         if (isinstance(parsed, list)
             and len(parsed) == 2
-            and parsed[0] == cls.TAG
+            and parsed[0] == Symbol(cls.TAG)
             and isinstance(parsed[1], str)):
             return cls(parsed[1])
         raise ParseError(ss, cls)
@@ -269,19 +299,18 @@ class HighlightAddAnnotationsResponse(Response):
         self._annotations = annotations
 
     def __str__(self):
+        return sexpr.format(self.to_sexpr())
+
+    def to_sexpr(self) -> sexpr.SExpr:
         remove = "remove" if self._removeHighlighting == RemoveTokenBasedHighlighting.RemoveHighlighting else sexpr.NIL
-        if self._annotations is None:
-            return '(%s %s)' % (self.tag, sexpr.format(['quote', remove]))
-        else:
-            return '(%s %s %s)' % (self.tag,
-                sexpr.format(['quote', remove]), sexpr.format(self._annotations))
+        return [Symbol(self.tag), ['quote', remove]] + (self._annotations if self._annotations is not None else [])
 
     @classmethod
     def parse(cls, ss) -> 'HighlightAddAnnotationsResponse':
         parsed = sexpr.parse(ss)
         if (isinstance(parsed, list)
             and 2 <= len(parsed) <= 3
-            and parsed[0] == cls.TAG
+            and parsed[0] == Symbol(cls.TAG)
             and isinstance(parsed[1], list)
             and all(isinstance(x, list) for x in parsed[2:])):
             if parsed[1] == ['quote', 'remove']:
@@ -312,6 +341,10 @@ class InteractionId:
     def __str__(self):
         return str(self._id)
 
+    @property
+    def id(self) -> int:
+        return self._id
+
     @classmethod
     def parse(cls, ss: str) -> 'InteractionId':
         return cls(int(ss))
@@ -328,7 +361,10 @@ class GiveString:
 @dataclass(frozen=True, slots=True)
 class GiveParen:
     def __str__(self):
-        return '\'paren'
+        return sexpr.format(self.to_sexpr())
+        
+    def to_sexpr(self) -> sexpr.SExpr:
+        return ['quote', 'paren']
 
     @classmethod
     def parse(cls, ss: str) -> 'GiveParen':
@@ -340,7 +376,10 @@ class GiveParen:
 @dataclass(frozen=True, slots=True)
 class GiveNoParen:
     def __str__(self):
-        return '\'no-paren'
+        return sexpr.format(self.to_sexpr())
+
+    def to_sexpr(self) -> sexpr.SExpr:
+        return ['quote', 'no-paren']
 
     @classmethod
     def parse(cls, ss: str) -> 'GiveNoParen':
@@ -373,14 +412,17 @@ class GiveActionResponse(Response):
         self._giveResult = giveResult
 
     def __str__(self):
-        return '(%s %s %s)' % (self.tag, self._interactionId, self._giveResult)
+        return sexpr.format(self.to_sexpr())
+
+    def to_sexpr(self) -> sexpr.SExpr:
+        return [Symbol(self.tag), self._interactionId._id, str(self._giveResult)]
 
     @classmethod
     def parse(cls, ss) -> 'GiveActionResponse':
         parsed = sexpr.parse(ss)
         if (isinstance(parsed, list)
             and len(parsed) == 3
-            and parsed[0] == cls.TAG
+            and parsed[0] == Symbol(cls.TAG)
             and isinstance(parsed[1], int)
             and isinstance(parsed[2], str)):
             interactionId = InteractionId(parsed[1])
@@ -409,14 +451,13 @@ class GoalsActionResponse(Response):
         self._goals = goals
 
     def __str__(self):
+        return sexpr.format(self.to_sexpr())
+
+    def to_sexpr(self) -> sexpr.SExpr:
         if self._priority is not None:
-            return '((last . %d) . (%s \'(%s)))' % (
-                self._priority,
-                self.tag,
-                ' '.join(str(g) for g in self._goals))
+            return Pair(Pair(Symbol('last'), self._priority), [Symbol(self.tag), ['quote', self._goals]])
         else:
-            return '(%s \'(%s))' % (
-                self.tag, ' '.join(str(g) for g in self._goals))
+            return [Symbol(self.tag), ['quote', self._goals]]
 
     @property
     def priority(self) -> Optional[int]:
@@ -432,7 +473,7 @@ class GoalsActionResponse(Response):
         priority = None
         if (isinstance(parsed, sexpr.Pair)
             and isinstance(parsed.car, sexpr.Pair)
-            and parsed.car.car == 'last'
+            and parsed.car.car == Symbol('last')
             and isinstance(parsed.car.cdr, int)):
             priority = parsed.car.cdr
             cmd = parsed.cdr
@@ -441,7 +482,7 @@ class GoalsActionResponse(Response):
         
         if (isinstance(cmd, list)
             and len(cmd) == 2
-            and cmd[0] == cls.TAG
+            and cmd[0] == Symbol(cls.TAG)
             and isinstance(cmd[1], list)
             and len(cmd[1]) == 2
             and cmd[1][0] == 'quote'
@@ -463,15 +504,13 @@ class MakeCaseActionResponse(Response):
         self._newcls = newcls
 
     def __str__(self):
+        return sexpr.format(self.to_sexpr())
+
+    def to_sexpr(self) -> sexpr.SExpr:
         if self._priority is not None:
-            return '((last . %d) . (%s \'(%s)))' % (
-                self._priority,
-                self.tag,
-                ' '.join(sexpr.format(c) for c in self._newcls))
+            return Pair(Pair(Symbol('last'), self._priority), [Symbol(self.tag), ['quote', self._newcls]])
         else:
-            return '(%s \'(%s))' % (
-                self.tag,
-                ' '.join(sexpr.format(c) for c in self._newcls))
+            return [Symbol(self.tag), ['quote', self._newcls]]
 
     @property
     def priority(self) -> Optional[int]:
@@ -487,7 +526,7 @@ class MakeCaseActionResponse(Response):
         priority = None
         if (isinstance(parsed, sexpr.Pair)
             and isinstance(parsed.car, sexpr.Pair)
-            and parsed.car.car == 'last'
+            and parsed.car.car == Symbol('last')
             and isinstance(parsed.car.cdr, int)):
             priority = parsed.car.cdr
             cmd = parsed.cdr
@@ -496,7 +535,7 @@ class MakeCaseActionResponse(Response):
 
         if (isinstance(cmd, list)
             and len(cmd) == 2
-            and cmd[0] == cls.TAG
+            and cmd[0] == Symbol(cls.TAG)
             and isinstance(cmd[1], list)
             and len(cmd[1]) == 2
             and cmd[1][0] == 'quote'
@@ -518,15 +557,13 @@ class MakeCaseActionExtendlamResponse(Response):
         self._newcls = newcls
 
     def __str__(self):
+        return sexpr.format(self.to_sexpr())
+
+    def to_sexpr(self) -> sexpr.SExpr:
         if self._priority is not None:
-            return '((last . %d) . (%s \'(%s)))' % (
-                self._priority,
-                self.tag,
-                ' '.join(sexpr.format(c) for c in self._newcls))
+            return Pair(Pair(Symbol('last'), self._priority), [Symbol(self.tag), ['quote', self._newcls]])
         else:
-            return '('' \'(%s))' % (
-                self.tag,
-                ' '.join(sexpr.format(c) for c in self._newcls))
+            return [Symbol(self.tag), ['quote', self._newcls]]
 
     @property
     def priority(self) -> Optional[int]:
@@ -542,7 +579,7 @@ class MakeCaseActionExtendlamResponse(Response):
         priority = None
         if (isinstance(parsed, sexpr.Pair)
             and isinstance(parsed.car, sexpr.Pair)
-            and parsed.car.car == 'last'
+            and parsed.car.car == Symbol('last')
             and isinstance(parsed.car.cdr, int)):
             priority = parsed.car.cdr
             cmd = parsed.cdr
@@ -551,7 +588,7 @@ class MakeCaseActionExtendlamResponse(Response):
 
         if (isinstance(cmd, list)
             and len(cmd) == 2
-            and cmd[0] == cls.TAG
+            and cmd[0] == Symbol(cls.TAG)
             and isinstance(cmd[1], list)
             and len(cmd[1]) == 2
             and cmd[1][0] == 'quote'
@@ -573,15 +610,13 @@ class SolveAllActionResponse(Response):
         self._solutions = solutions
 
     def __str__(self):
+        return sexpr.format(self.to_sexpr())
+
+    def to_sexpr(self) -> sexpr.SExpr:
         if self._priority is not None:
-            return '((last . %d) . (%s \'(%s)))' % (
-                self._priority,
-                self.tag,
-                ' '.join(sexpr.format(sol) for sol in self._solutions))
+            return Pair(Pair(Symbol('last'), self._priority), [Symbol(self.tag), ['quote', self._solutions]])
         else:
-            return '(%s \'(%s))' % (
-                self.tag,
-                ' '.join(sexpr.format(sol) for sol in self._solutions))
+            return [Symbol(self.tag), ['quote', self._solutions]]
 
     @property
     def priority(self) -> Optional[int]:
@@ -597,7 +632,7 @@ class SolveAllActionResponse(Response):
         priority = None
         if (isinstance(parsed, sexpr.Pair)
             and isinstance(parsed.car, sexpr.Pair)
-            and parsed.car.car == 'last'
+            and parsed.car.car == Symbol('last')
             and isinstance(parsed.car.cdr, int)):
             priority = parsed.car.cdr
             cmd = parsed.cdr
@@ -606,7 +641,7 @@ class SolveAllActionResponse(Response):
 
         if (isinstance(cmd, list)
             and len(cmd) == 2
-            and cmd[0] == cls.TAG
+            and cmd[0] == Symbol(cls.TAG)
             and isinstance(cmd[1], list)
             and len(cmd[1]) == 2
             and cmd[1][0] == 'quote'
@@ -631,17 +666,13 @@ class MaybeGotoResponse(Response):
         self._position = position
 
     def __str__(self):
+        return sexpr.format(self.to_sexpr())
+
+    def to_sexpr(self) -> sexpr.SExpr:
         if self._priority is not None:
-            return '((last . %d) . (%s \'(%s . %d)))' % (
-                self._priority,
-                self.tag,
-                self._filePath,
-                self._position)
+            return Pair(Pair(Symbol('last'), self._priority), [Symbol(self.tag), ['quote', Pair(self._filePath, self._position)]])
         else:
-            return '(%s \'(%s . %d))' % (
-                self.tag,
-                self._filePath,
-                self._position)
+            return [Symbol(self.tag), ['quote', Pair(self._filePath, self._position)]]
 
     @property
     def priority(self) -> Optional[int]:
@@ -661,7 +692,7 @@ class MaybeGotoResponse(Response):
         priority = None
         if (isinstance(parsed, sexpr.Pair)
             and isinstance(parsed.car, sexpr.Pair)
-            and parsed.car.car == 'last'
+            and parsed.car.car == Symbol('last')
             and isinstance(parsed.car.cdr, int)):
             priority = parsed.car.cdr
             cmd = parsed.cdr
@@ -670,7 +701,7 @@ class MaybeGotoResponse(Response):
 
         if (isinstance(cmd, list)
             and len(cmd) == 2
-            and cmd[0] == cls.TAG
+            and cmd[0] == Symbol(cls.TAG)
             and isinstance(cmd[1], list)
             and len(cmd[1]) == 2
             and cmd[1][0] == 'quote'

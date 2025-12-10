@@ -77,8 +77,11 @@ class TestResponse(unittest.TestCase):
         self.assert_response(HighlightAddAnnotationsResponse, "(agda2-highlight-add-annotations 'nil '(940 946 (keyword) t))")
         self.assert_response(HighlightAddAnnotationsResponse, "(agda2-highlight-add-annotations 'nil '(95 96 (datatype) nil nil (HighlightPositivity.agda . 95)))")
         self.assert_response(HighlightAddAnnotationsResponse, "(agda2-highlight-add-annotations 'nil '(97 98 (module) nil nil (Issue3010.agda . 25)))")
+        self.assert_response(HighlightAddAnnotationsResponse, "(agda2-highlight-add-annotations 'nil '(4625 4627 (deadcode)) '(4686 4688 (deadcode)))")
+        self.assert_response(HighlightAddAnnotationsResponse, "(agda2-highlight-add-annotations 'nil '(320 322 (unsolvedconstraint)) '(349 370 (unsolvedconstraint)))")
         self.assert_response(HighlightAddAnnotationsResponse, "(agda2-highlight-add-annotations 'remove '(1 27 (background) t))")
         self.assert_response(HighlightAddAnnotationsResponse, "(agda2-highlight-add-annotations 'remove '(1 7 (keyword) t))")
+        self.assert_response(HighlightAddAnnotationsResponse, "(agda2-highlight-add-annotations 'remove '(1 27 (background) t) '(27 28 (background) t) '(28 39 (background) t) '(39 40 (background) t) '(40 52 (markup) t) '(53 62 (keyword) t) '(65 66 (symbol) t) '(71 81 (markup) t) '(81 82 (background) t))")
 
     def test_info_action_and_copy_response_roundtrip(self):
         self.assert_response(InfoActionAndCopyResponse, '''(agda2-info-action-and-copy "*Helper function*" "id' : ∀ {A} → A → A " nil)''')
