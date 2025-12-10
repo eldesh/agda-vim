@@ -6,8 +6,7 @@ from abc import ABC, abstractmethod
 import logging
 
 from . import sexpr
-Symbol = sexpr.Symbol
-Pair = sexpr.Pair
+from .sexpr import Nil, Symbol, Pair, QUOTE, qq
 
 logger = logging.getLogger(__name__)
 
@@ -303,7 +302,7 @@ class HighlightAddAnnotationsResponse(Response):
 
     def to_sexpr(self) -> sexpr.SExpr:
         remove = "remove" if self._removeHighlighting == RemoveTokenBasedHighlighting.RemoveHighlighting else sexpr.NIL
-        return [Symbol(self.tag), ['quote', remove]] + (self._annotations if self._annotations is not None else [])
+        return [Symbol(self.tag), qq(remove)] + (self._annotations if self._annotations is not None else [])
 
     @classmethod
     def parse(cls, ss) -> 'HighlightAddAnnotationsResponse':
@@ -313,9 +312,9 @@ class HighlightAddAnnotationsResponse(Response):
             and parsed[0] == Symbol(cls.TAG)
             and isinstance(parsed[1], list)
             and all(isinstance(x, list) for x in parsed[2:])):
-            if parsed[1] == ['quote', 'remove']:
+            if parsed[1] == qq('remove'):
                 remove = RemoveTokenBasedHighlighting.RemoveHighlighting
-            elif parsed[1] == ['quote', sexpr.NIL]:
+            elif parsed[1] == qq(sexpr.NIL):
                 remove = RemoveTokenBasedHighlighting.KeepHighlighting
             else:
                 raise ParseError(ss, cls)
@@ -364,7 +363,7 @@ class GiveParen:
         return sexpr.format(self.to_sexpr())
         
     def to_sexpr(self) -> sexpr.SExpr:
-        return ['quote', 'paren']
+        return qq('paren')
 
     @classmethod
     def parse(cls, ss: str) -> 'GiveParen':
@@ -379,7 +378,7 @@ class GiveNoParen:
         return sexpr.format(self.to_sexpr())
 
     def to_sexpr(self) -> sexpr.SExpr:
-        return ['quote', 'no-paren']
+        return qq('no-paren')
 
     @classmethod
     def parse(cls, ss: str) -> 'GiveNoParen':
@@ -455,9 +454,9 @@ class GoalsActionResponse(Response):
 
     def to_sexpr(self) -> sexpr.SExpr:
         if self._priority is not None:
-            return Pair(Pair(Symbol('last'), self._priority), [Symbol(self.tag), ['quote', self._goals]])
+            return Pair(Pair(Symbol('last'), self._priority), [Symbol(self.tag), qq(self._goals)])
         else:
-            return [Symbol(self.tag), ['quote', self._goals]]
+            return [Symbol(self.tag), qq(self._goals)]
 
     @property
     def priority(self) -> Optional[int]:
@@ -485,7 +484,7 @@ class GoalsActionResponse(Response):
             and cmd[0] == Symbol(cls.TAG)
             and isinstance(cmd[1], list)
             and len(cmd[1]) == 2
-            and cmd[1][0] == 'quote'
+            and cmd[1][0] == QUOTE
             and all(isinstance(x, int) for x in cmd[1][1])):
             goals = cmd[1][1]
             return cls(priority, goals)
@@ -508,9 +507,9 @@ class MakeCaseActionResponse(Response):
 
     def to_sexpr(self) -> sexpr.SExpr:
         if self._priority is not None:
-            return Pair(Pair(Symbol('last'), self._priority), [Symbol(self.tag), ['quote', self._newcls]])
+            return Pair(Pair(Symbol('last'), self._priority), [Symbol(self.tag), qq(self._newcls)])
         else:
-            return [Symbol(self.tag), ['quote', self._newcls]]
+            return [Symbol(self.tag), qq(self._newcls)]
 
     @property
     def priority(self) -> Optional[int]:
@@ -538,7 +537,7 @@ class MakeCaseActionResponse(Response):
             and cmd[0] == Symbol(cls.TAG)
             and isinstance(cmd[1], list)
             and len(cmd[1]) == 2
-            and cmd[1][0] == 'quote'
+            and cmd[1][0] == QUOTE
             and all(isinstance(x, str) for x in cmd[1][1])):
             newcls = cmd[1][1]
             return cls(priority, newcls)
@@ -561,9 +560,9 @@ class MakeCaseActionExtendlamResponse(Response):
 
     def to_sexpr(self) -> sexpr.SExpr:
         if self._priority is not None:
-            return Pair(Pair(Symbol('last'), self._priority), [Symbol(self.tag), ['quote', self._newcls]])
+            return Pair(Pair(Symbol('last'), self._priority), [Symbol(self.tag), qq(self._newcls)])
         else:
-            return [Symbol(self.tag), ['quote', self._newcls]]
+            return [Symbol(self.tag), qq(self._newcls)]
 
     @property
     def priority(self) -> Optional[int]:
@@ -591,7 +590,7 @@ class MakeCaseActionExtendlamResponse(Response):
             and cmd[0] == Symbol(cls.TAG)
             and isinstance(cmd[1], list)
             and len(cmd[1]) == 2
-            and cmd[1][0] == 'quote'
+            and cmd[1][0] == QUOTE
             and all(isinstance(x, str) for x in cmd[1][1])):
             newcls = cmd[1][1]
             return cls(priority, newcls)
@@ -614,9 +613,9 @@ class SolveAllActionResponse(Response):
 
     def to_sexpr(self) -> sexpr.SExpr:
         if self._priority is not None:
-            return Pair(Pair(Symbol('last'), self._priority), [Symbol(self.tag), ['quote', self._solutions]])
+            return Pair(Pair(Symbol('last'), self._priority), [Symbol(self.tag), qq(self._solutions)])
         else:
-            return [Symbol(self.tag), ['quote', self._solutions]]
+            return [Symbol(self.tag), qq(self._solutions)]
 
     @property
     def priority(self) -> Optional[int]:
@@ -644,7 +643,7 @@ class SolveAllActionResponse(Response):
             and cmd[0] == Symbol(cls.TAG)
             and isinstance(cmd[1], list)
             and len(cmd[1]) == 2
-            and cmd[1][0] == 'quote'
+            and cmd[1][0] == QUOTE
             and isinstance(cmd[1][1], list)
             and all(isinstance(x, int) or isinstance(x, str) for x in cmd[1][1])):
             solutions = cmd[1][1]
@@ -670,9 +669,9 @@ class MaybeGotoResponse(Response):
 
     def to_sexpr(self) -> sexpr.SExpr:
         if self._priority is not None:
-            return Pair(Pair(Symbol('last'), self._priority), [Symbol(self.tag), ['quote', Pair(self._filePath, self._position)]])
+            return Pair(Pair(Symbol('last'), self._priority), [Symbol(self.tag), qq(Pair(self._filePath, self._position))])
         else:
-            return [Symbol(self.tag), ['quote', Pair(self._filePath, self._position)]]
+            return [Symbol(self.tag), qq(Pair(self._filePath, self._position))]
 
     @property
     def priority(self) -> Optional[int]:
@@ -704,7 +703,7 @@ class MaybeGotoResponse(Response):
             and cmd[0] == Symbol(cls.TAG)
             and isinstance(cmd[1], list)
             and len(cmd[1]) == 2
-            and cmd[1][0] == 'quote'
+            and cmd[1][0] == QUOTE
             and isinstance(cmd[1][1], sexpr.Pair)
             and isinstance(cmd[1][1].car, str)
             and isinstance(cmd[1][1].cdr, int)):

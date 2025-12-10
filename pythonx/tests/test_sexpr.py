@@ -9,6 +9,7 @@ sys.modules["vim"] = fake_vim
 
 from agdavim.response import sexpr
 Symbol = sexpr.Symbol
+QUOTE = sexpr.QUOTE
 
 class TestSExpr(unittest.TestCase):
     def test_parse_sexpr(self):
@@ -40,26 +41,26 @@ class TestSExpr(unittest.TestCase):
         self.assertEqual(
             sexpr.parse(sexpr_str),
             [Symbol('agda2-highlight-add-annotations'),
-             ['quote', sexpr.NIL],
-             ['quote', [1, 4, [Symbol('symbol')], True]],
-             ['quote', [5, 12, [Symbol('keyword')], True]],
-             ['quote', [13, 25, [Symbol('pragma')], True]],
-             ['quote', [26, 29, [Symbol('symbol')], True]],
-             ['quote', [31, 37, [Symbol('keyword')], True]],
-             ['quote', [57, 62, [Symbol('keyword')], True]],
-             ['quote', [64, 70, [Symbol('keyword')], True]],
-             ['quote', [79, 80, [Symbol('symbol')], True]],
-             ['quote', [86, 91, [Symbol('keyword')], True]],
-             ['quote', [94, 99, [Symbol('keyword')], True]],
-             ['quote', [112, 113, [Symbol('symbol')], True]],
-             ['quote', [119, 123, [Symbol('keyword')], True]],
-             ['quote', [136, 137, [Symbol('symbol')], True]],
-             ['quote', [157, 158, [Symbol('symbol')], True]],
-             ['quote', [166, 220, [Symbol('comment')], True]],
-             ['quote', [227, 228, [Symbol('symbol')], True]],
-             ['quote', [237, 238, [Symbol('symbol')], True]],
-             ['quote', [251, 252, [Symbol('symbol')], True]],
-             ['quote', [264, 318, [Symbol('comment')], True]]]
+             [QUOTE, sexpr.NIL],
+             [QUOTE, [1, 4, [Symbol('symbol')], True]],
+             [QUOTE, [5, 12, [Symbol('keyword')], True]],
+             [QUOTE, [13, 25, [Symbol('pragma')], True]],
+             [QUOTE, [26, 29, [Symbol('symbol')], True]],
+             [QUOTE, [31, 37, [Symbol('keyword')], True]],
+             [QUOTE, [57, 62, [Symbol('keyword')], True]],
+             [QUOTE, [64, 70, [Symbol('keyword')], True]],
+             [QUOTE, [79, 80, [Symbol('symbol')], True]],
+             [QUOTE, [86, 91, [Symbol('keyword')], True]],
+             [QUOTE, [94, 99, [Symbol('keyword')], True]],
+             [QUOTE, [112, 113, [Symbol('symbol')], True]],
+             [QUOTE, [119, 123, [Symbol('keyword')], True]],
+             [QUOTE, [136, 137, [Symbol('symbol')], True]],
+             [QUOTE, [157, 158, [Symbol('symbol')], True]],
+             [QUOTE, [166, 220, [Symbol('comment')], True]],
+             [QUOTE, [227, 228, [Symbol('symbol')], True]],
+             [QUOTE, [237, 238, [Symbol('symbol')], True]],
+             [QUOTE, [251, 252, [Symbol('symbol')], True]],
+             [QUOTE, [264, 318, [Symbol('comment')], True]]]
         )
 
 if __name__ == '__main__':

@@ -42,6 +42,10 @@ logger = logging.getLogger(__name__)
 
 NIL = Nil()
 DOT = Symbol('.')
+QUOTE = Symbol('quote')
+
+def qq(expr: SExpr) -> SExpr:
+    return [QUOTE, expr]
 
 def _parse_list(tokens: Iterator[Token]) -> Iterator[SExpr]:
     for tok in tokens:
@@ -64,17 +68,17 @@ def _parse_list(tokens: Iterator[Token]) -> Iterator[SExpr]:
         elif tok.kind == TokenKind.QUOTE:
             next_tok = next(tokens)
             if next_tok.kind == TokenKind.LPAREN:
-                quoted_expr = list(_parse_list(tokens))
-                if not DOT in quoted_expr:
-                    yield ['quote', quoted_expr]
-                elif len(quoted_expr) == 3 and quoted_expr[0] != DOT and quoted_expr[1] == DOT and quoted_expr[2] != DOT:
-                    yield ['quote', Pair(quoted_expr[0], quoted_expr[2])]
+                qexpr = list(_parse_list(tokens))
+                if not DOT in qexpr:
+                    yield [QUOTE, qexpr]
+                elif len(qexpr) == 3 and qexpr[0] != DOT and qexpr[1] == DOT and qexpr[2] != DOT:
+                    yield [QUOTE, Pair(qexpr[0], qexpr[2])]
                 else:
-                    raise ValueError("Invalid dotted pair syntax: %s" % quoted_expr)
+                    raise ValueError("Invalid dotted pair syntax: %s" % qexpr)
             elif next_tok.kind == TokenKind.STRING:
-                yield ['quote', next_tok.value]
+                yield [QUOTE, next_tok.value]
             elif next_tok.kind == TokenKind.ATOM:
-                yield ['quote', _convert_atom(next_tok.value)]
+                yield [QUOTE, _convert_atom(next_tok.value)]
             else:
                 raise ValueError("Unexpected token after quote: %s" % next_tok)
         else:
@@ -137,7 +141,7 @@ def format(sexpr: SExpr) -> str:
     Convert an S-expression back to its string representation.
     """
     if isinstance(sexpr, list):
-        if len(sexpr) >= 1 and sexpr[0] == 'quote':
+        if len(sexpr) >= 1 and sexpr[0] == QUOTE:
             return '\'' + ' '.join(format(s) for s in sexpr[1:])
         return '(' + ' '.join(format(s) for s in sexpr) + ')'
     if isinstance(sexpr, str):
