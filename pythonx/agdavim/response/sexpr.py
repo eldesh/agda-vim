@@ -47,6 +47,11 @@ QUOTE = Symbol('quote')
 def qq(expr: SExpr) -> SExpr:
     return [QUOTE, expr]
 
+def isqq(sexpr: SExpr) -> bool:
+    return (isinstance(sexpr, list)
+            and len(sexpr) == 2
+            and sexpr[0] == QUOTE)
+
 def _parse_list(tokens: Iterator[Token]) -> Iterator[SExpr]:
     for tok in tokens:
         if tok.kind == TokenKind.RPAREN:

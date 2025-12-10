@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Union, List, Optional, ClassVar
+from typing import Any, Union, List, Optional, ClassVar, Tuple
 from dataclasses import dataclass
 from enum import IntEnum, unique
 from abc import ABC, abstractmethod
@@ -270,56 +270,154 @@ class RemoveTokenBasedHighlighting(IntEnum):
     KeepHighlighting = 1
 
     def __str__(self):
+        return sexpr.format(self.to_sexpr())
+
+    def to_sexpr(self) -> sexpr.SExpr:
         if self == RemoveTokenBasedHighlighting.RemoveHighlighting:
-            return sexpr.format("remove")
+            return Symbol("remove")
         else:
-            return sexpr.format(sexpr.NIL)
+            return sexpr.NIL
 
     @classmethod
     def parse(cls, s: str) -> 'RemoveTokenBasedHighlighting':
         parsed = sexpr.parse(s)
-        if isinstance(parsed, str) and parsed == "remove":
+        if isinstance(parsed, Symbol) and parsed.name == "remove":
             return cls.RemoveHighlighting
         if isinstance(parsed, Nil):
             return cls.KeepHighlighting
         raise ValueError("Invalid value for RemoveTokenBasedHighlighting: %s" % s)
 
 
+class AnnotationCommand:
+    """
+    Represents an annotation command of the form:
+    > (FROM TO ASPECTS [TOKEN-BASED] [DEF-FLAG] [DEF-SITE])
+    """
+    _from: int
+    _to: int
+    _aspects: List[str]
+    _token_based: Optional[Union[bool, Nil]]
+    _def_flag: Optional[Union[bool, Nil]]
+    _def_site: Optional[Tuple[str, int]]
+
+    def __init__(self, from_: int, to: int, aspects: List[str],
+                 token_based: Optional[bool] = None,
+                 def_flag: Optional[bool] = None,
+                 def_site: Optional[Tuple[str, int]] = None):
+        self._from = from_
+        self._to = to
+        self._aspects = aspects
+        self._token_based = token_based
+        self._def_flag = def_flag
+        self._def_site = def_site
+
+    def to_sexpr(self) -> sexpr.SExpr:
+        def_site = [] if self._def_site is None else [Pair(Symbol(self._def_site[0]), self._def_site[1])]
+        def_flag = [] if self._def_flag is None else [self._def_flag]
+        token_based = [] if self._token_based is None else [self._token_based]
+        return [self._from, self._to, self._aspects] + token_based + def_flag + def_site
+
+    def __str__(self):
+        return sexpr.format(self.to_sexpr())
+
+    @classmethod
+    def parse(cls, expr: sexpr.SExpr) -> 'AnnotationCommand':
+        # e.g. [Symbol(name='quote'), [94, 95, [Symbol(name='function')], nil, nil, Pair(car=Symbol(name='Issue4954-2.agda'), cdr=94)]]
+        if (isinstance(expr, list)
+            and 3 <= len(expr) <= 6
+            and isinstance(expr[0], int)
+            and isinstance(expr[1], int)
+            and isinstance(expr[2], list)
+            and all(isinstance(x, Symbol) for x in expr[2])):
+            from_ = expr[0]
+            to = expr[1]
+            aspects = expr[2]
+            token_based = None
+            def_flag = None
+            def_site = None
+            if len(expr) >= 4:
+                if isinstance(expr[3], (bool, Nil)):
+                    token_based = expr[3]
+                else:
+                    raise ParseError(expr, cls)
+            if len(expr) >= 5:
+                if isinstance(expr[4], (bool, Nil)):
+                    def_flag = expr[4]
+                else:
+                    raise ParseError(expr, cls)
+            if len(expr) == 6:
+                if (isinstance(expr[5], Pair)
+                    and isinstance(expr[5].car, Symbol)
+                    and isinstance(expr[5].cdr, int)):
+                    def_site = (expr[5].car.name, expr[5].cdr)
+                else:
+                    raise ParseError(expr, cls)
+            return cls(from_, to, aspects, token_based, def_flag, def_site)
+        raise ParseError(expr, cls)
+
+
+    @property
+    def from_(self) -> int:
+        return self._from
+
+    @property
+    def to(self) -> int:
+        return self._to
+
+    @property
+    def aspects(self) -> List[str]:
+        return self._aspects
+
+    @property
+    def token_based(self) -> Optional[Union[bool, Nil]]:
+        return self._token_based
+
+    @property
+    def def_flag(self) -> Optional[Union[bool, Nil]]:
+        return self._def_flag
+
+    @property
+    def def_site(self) -> Optional[Tuple[str, int]]:
+        return self._def_site
+
+
 class HighlightAddAnnotationsResponse(Response):
     TAG: ClassVar[str] = "agda2-highlight-add-annotations"
 
     _removeHighlighting: RemoveTokenBasedHighlighting
-    _annotations: Optional[sexpr.SExpr]
-    def __init__(self, removeHighlighting: RemoveTokenBasedHighlighting, annotations: Optional[sexpr.SExpr] = None):
+    _commands: List[AnnotationCommand]
+
+    def __init__(self, removeHighlighting: RemoveTokenBasedHighlighting, commands: List[AnnotationCommand] = None):
         super().__init__()
         self._removeHighlighting = removeHighlighting
-        self._annotations = annotations
+        self._commands = commands
 
     def __str__(self):
         return sexpr.format(self.to_sexpr())
 
     def to_sexpr(self) -> sexpr.SExpr:
-        remove = "remove" if self._removeHighlighting == RemoveTokenBasedHighlighting.RemoveHighlighting else sexpr.NIL
-        return [Symbol(self.tag), qq(remove)] + (self._annotations if self._annotations is not None else [])
+        remove = self._removeHighlighting.to_sexpr()
+        return [Symbol(self.tag), qq(remove)] + [qq(cmd.to_sexpr()) for cmd in self._commands]
+
+    @classmethod
+    def _remove_of(cls, expr) -> 'RemoveTokenBasedHighlighting':
+        if expr == qq(Symbol('remove')):
+            return RemoveTokenBasedHighlighting.RemoveHighlighting
+        if expr == qq(sexpr.NIL):
+            return RemoveTokenBasedHighlighting.KeepHighlighting
+        raise ParseError(expr, RemoveTokenBasedHighlighting)
 
     @classmethod
     def parse(cls, ss) -> 'HighlightAddAnnotationsResponse':
         parsed = sexpr.parse(ss)
         if (isinstance(parsed, list)
-            and 2 <= len(parsed) <= 3
+            and 2 <= len(parsed)
             and parsed[0] == Symbol(cls.TAG)
             and isinstance(parsed[1], list)
-            and all(isinstance(x, list) for x in parsed[2:])):
-            if parsed[1] == qq('remove'):
-                remove = RemoveTokenBasedHighlighting.RemoveHighlighting
-            elif parsed[1] == qq(sexpr.NIL):
-                remove = RemoveTokenBasedHighlighting.KeepHighlighting
-            else:
-                raise ParseError(ss, cls)
-            if len(parsed) == 2:
-                return cls(remove)
-            else:
-                return cls(remove, parsed[2])
+            and all(sexpr.isqq(x) for x in parsed[2:])):
+            remove = cls._remove_of(parsed[1])
+            commands = [AnnotationCommand.parse(expr[1]) for expr in parsed[2:]]
+            return cls(remove, commands)
         raise ParseError(ss, cls)
 
     @property
@@ -327,8 +425,8 @@ class HighlightAddAnnotationsResponse(Response):
         return self._removeHighlighting
 
     @property
-    def annotations(self) -> Optional[sexpr.SExpr]:
-        return self._annotations
+    def commands(self) -> List[sexpr.SExpr]:
+        return self._commands
 
 
 @dataclass(frozen=True, slots=True)
