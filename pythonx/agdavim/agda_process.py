@@ -52,7 +52,7 @@ class AgdaProcess:
     def restart(self, path):
         '''Terminates the current Agda process and starts a new one located at `path`.'''
         self.stop_wait()
-        self = AgdaProcess(path)
+        AgdaProcess.__init__(self, path)
 
     def stop_wait(self):
         '''Terminates the current Agda process and waits for it to exit. If it does not exit within 10 seconds, it is killed.'''
