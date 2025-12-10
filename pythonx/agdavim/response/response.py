@@ -194,9 +194,9 @@ class InfoActionAndCopyResponse(Response):
 
     _name: str
     _text: str
-    _append: Union[str, sexpr.Nil]
+    _append: bool
 
-    def __init__(self, name: str, text: str, append: Union[str, sexpr.Nil]):
+    def __init__(self, name: str, text: str, append: bool):
         super().__init__()
         self._name = name
         self._text = text
@@ -206,21 +206,19 @@ class InfoActionAndCopyResponse(Response):
         return sexpr.format(self.to_sexpr())
 
     def to_sexpr(self) -> sexpr.SExpr:
-        return [Symbol(self.TAG), self._name, self._text, self._append]
+        return [Symbol(self.TAG), self._name, self._text, 't' if self._append else sexpr.NIL]
 
     @classmethod
     def parse(cls, ss) -> 'InfoActionAndCopyResponse':
         parsed = sexpr.parse(ss)
         if (isinstance(parsed, list)
-            and 3 <= len(parsed) <= 4
+            and len(parsed) <= 4
             and parsed[0] == Symbol(cls.TAG)
             and isinstance(parsed[1], str)
-            and isinstance(parsed[2], str)):
-            if len(parsed) == 3:
-                return cls(parsed[1], parsed[2])
-            assert len(parsed) == 4
-            return cls(parsed[1], parsed[2], parsed[3])
-        print("Failed to parse InfoActionAndCopyResponse: %s" % parsed)
+            and isinstance(parsed[2], str)
+            and (isinstance(parsed[3], Nil)
+                or (isinstance(parsed[3], bool) and parsed[3]))):
+            return cls(parsed[1], parsed[2], isinstance(parsed[3], bool))
         raise ParseError(ss, cls)
 
     @property
@@ -232,7 +230,7 @@ class InfoActionAndCopyResponse(Response):
         return self._text
 
     @property
-    def append(self) -> Union[str, sexpr.Nil]:
+    def append(self) -> bool:
         return self._append
 
 
