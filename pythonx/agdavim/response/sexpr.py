@@ -21,21 +21,27 @@ class Nil:
     def __eq__(self, other: 'Nil'):
         return isinstance(other, Nil)
 
+@dataclass(frozen=True, slots=True)
+class Symbol:
+    name: str
+    def __str__(self):
+        return self.name
+
 @dataclass(frozen=True)
 class Pair:
     car: "SExpr"
     cdr: "SExpr"
     
     def __str__(self):
-        return "(%s . %s)" % (format(self.car), format(self.cdr))
+        return format([self.car, Symbol('.'), self.cdr])
 
-SAtom: Type = Union[str, int, float, bool, Nil]
+SAtom: Type = Union[Symbol, str, int, float, bool, Nil]
 SExpr: Type = Union[SAtom, List["SExpr"], Pair]
 
 logger = logging.getLogger(__name__)
 
-
 NIL = Nil()
+DOT = Symbol('.')
 
 def _parse_list(tokens: Iterator[Token]) -> Iterator[SExpr]:
     for tok in tokens:
@@ -43,25 +49,25 @@ def _parse_list(tokens: Iterator[Token]) -> Iterator[SExpr]:
             return
         elif tok.kind == TokenKind.LPAREN:
             lst = list(_parse_list(tokens))
-            if not '.' in lst:
+            if not DOT in lst:
                 yield lst
-            elif len(lst) == 3 and lst[0] != '.' and lst[1] == '.' and lst[2] != '.':
+            elif len(lst) == 3 and lst[0] != DOT and lst[1] == DOT and lst[2] != DOT:
                 yield Pair(lst[0], lst[2])
             else:
                 raise ValueError("Invalid dotted pair syntax: %s" % lst)
         elif tok.kind == TokenKind.STRING:
-            yield '"' + tok.value + '"'
+            yield tok.value
         elif tok.kind == TokenKind.ATOM:
             yield _convert_atom(tok.value)
         elif tok.kind == TokenKind.DOT:
-            yield '.'
+            yield DOT
         elif tok.kind == TokenKind.QUOTE:
             next_tok = next(tokens)
             if next_tok.kind == TokenKind.LPAREN:
                 quoted_expr = list(_parse_list(tokens))
-                if not '.' in quoted_expr:
+                if not DOT in quoted_expr:
                     yield ['quote', quoted_expr]
-                elif len(quoted_expr) == 3 and quoted_expr[0] != '.' and quoted_expr[1] == '.' and quoted_expr[2] != '.':
+                elif len(quoted_expr) == 3 and quoted_expr[0] != DOT and quoted_expr[1] == DOT and quoted_expr[2] != DOT:
                     yield ['quote', Pair(quoted_expr[0], quoted_expr[2])]
                 else:
                     raise ValueError("Invalid dotted pair syntax: %s" % quoted_expr)
@@ -93,7 +99,7 @@ def _convert_atom(atom: str) -> SAtom:
     except ValueError:
         pass
     # Symbols as strings
-    return atom
+    return Symbol(atom)
 
 
 def parse(s: str) -> SExpr:
@@ -108,9 +114,10 @@ def parse(s: str) -> SExpr:
         try:
             extra = next(it)
         except StopIteration:
-            if not '.' in res:
+            dot = Symbol('.')
+            if not dot in res:
                 return res
-            elif len(res) == 3 and res[0] != '.' and res[1] == '.' and res[2] != '.':
+            elif len(res) == 3 and res[0] != dot and res[1] == dot and res[2] != dot:
                 return Pair(res[0], res[2])
             else:
                 raise ValueError("Invalid dotted pair syntax: %s" % res)
@@ -135,8 +142,9 @@ def format(sexpr: SExpr) -> str:
         return '(' + ' '.join(format(s) for s in sexpr) + ')'
     if isinstance(sexpr, str):
         # Escape special characters in strings
-        # return sexpr.replace('"', '\\"')
-        return sexpr
+        return '"' + sexpr.replace('"', '\\"') + '"'
+    if isinstance(sexpr, Symbol):
+        return str(sexpr)
     if isinstance(sexpr, bool):
         return 't' if sexpr else 'nil'
     return str(sexpr)
