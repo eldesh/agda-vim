@@ -93,7 +93,6 @@ def tokenize(s: str) -> Iterator[Token]:
                         buf.append(ch + esc)
                     i += 1
                 elif ch == '"':
-                    logger.debug("terminated string: %s" % ''.join(buf))
                     i += 1
                     break
                 else:
@@ -110,6 +109,5 @@ def tokenize(s: str) -> Iterator[Token]:
             while i < n and (not s[i].isspace()) and s[i] not in ')':
                 i += 1
             atom = s[start:i]
-            logger.debug("atom: s[%d:%d]:%s" % (start, i, atom))
             yield Token(TokenKind.ATOM, atom)
 
