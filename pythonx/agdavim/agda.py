@@ -261,8 +261,7 @@ def interpretResponse(responses, quiet = False):
                     logger.error('Agda mode\'s version (%s) does not match that of %s (%s)'
                                  % (agda_mode_version, agda.path, agda.version))
             if quiet: continue
-            logger.debug('call s:LogAgda(%s,%s,%s)' % (strings[0], strings[1], 'v:true' if response.append else 'v:false'))
-            vim.command('call s:LogAgda(%s,%s,%s)' % (strings[0], strings[1], 'v:true' if response.append else 'v:false'))
+            vim.command('call s:LogAgda("%s","%s",%s)' % (strings[0], strings[1], 'v:true' if response.append else 'v:false'))
 
         elif isinstance(response, GoalsActionResponse):
             findGoals(response.goals)
@@ -336,10 +335,9 @@ def interpretResponse(responses, quiet = False):
 def sendCommand(arg, quiet=False):
     vim.command('silent! write')
     f = vim.current.buffer.name
-    logger.debug('sendCommand(%s)' % f)
+    logger.debug('IOTCM "%s" None Direct (%s)\nx\n' % (escape(f), arg))
     # The x is a really hacky way of getting a consistent final response.  Namely, "cannot read"
     agda.stdin.write('IOTCM "%s" None Direct (%s)\nx\n' % (escape(f), arg))
-    logger.debug('IOTCM "%s" None Direct (%s)\nx\n' % (escape(f), arg))
     interpretResponse(getOutput(), quiet)
 
 def sendCommandLoadHighlightInfo(file, quiet):
