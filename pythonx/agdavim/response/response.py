@@ -452,6 +452,10 @@ class GiveString:
     def __str__(self):
         return self.text
 
+    @property
+    def text(self) -> str:
+        return self.text
+
 
 @dataclass(frozen=True, slots=True)
 class GiveParen:
