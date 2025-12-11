@@ -303,7 +303,7 @@ command! -buffer -nargs=? -complete=file AgdaRestart
     \ endif |
     \ call AgdaRestart(g:agdavim_agda_path)
 
-nnoremap <buffer> <LocalLeader>l :<C-u>AgdaReload<CR>
+nnoremap <buffer> <LocalLeader>l :<C-u>AgdaLoad<CR>
 nnoremap <buffer> <LocalLeader>t :<C-u>call AgdaInferTypeMaybeToplevel(v:count)<CR>
 nnoremap <buffer> <LocalLeader>r :<C-u>call AgdaRefine(v:false)<CR>
 nnoremap <buffer> <LocalLeader>R :<C-u>call AgdaRefine(v:true)<CR>
