@@ -161,7 +161,7 @@ class InfoActionResponse(Response):
         return sexpr.format(self.to_sexpr())
 
     def to_sexpr(self) -> sexpr.SExpr:
-        return [Symbol(self.TAG), self._name, self._text, 't' if self._append else sexpr.NIL]
+        return [Symbol(self.TAG), self._name, self._text, True if self._append else sexpr.NIL]
 
     @classmethod
     def parse(cls, ss) -> 'InfoActionResponse':
