@@ -315,9 +315,9 @@ class FilePosition:
         return sexpr.format(self.to_sexpr())
 
 
-class AnnotationCommand:
+class HighlightAnnotation:
     """
-    Represents an annotation command of the form:
+    Represents a highlight annotation of the form:
     > (FROM TO ASPECTS [TOKEN-BASED] [INFO] [FILEPOS])
     """
     _from: int
@@ -348,7 +348,7 @@ class AnnotationCommand:
         return sexpr.format(self.to_sexpr())
 
     @classmethod
-    def parse(cls, expr: sexpr.SExpr) -> 'AnnotationCommand':
+    def parse(cls, expr: sexpr.SExpr) -> 'HighlightAnnotation':
         # e.g. [Symbol(name='quote'), [94, 95, [Symbol(name='function')], nil, nil, Pair(car=Symbol(name='Issue4954-2.agda'), cdr=94)]]
         if (isinstance(expr, list)
             and 3 <= len(expr) <= 6
@@ -412,19 +412,19 @@ class HighlightAddAnnotationsResponse(Response):
     TAG: ClassVar[str] = "agda2-highlight-add-annotations"
 
     _removeHighlighting: RemoveTokenBasedHighlighting
-    _commands: List[AnnotationCommand]
+    _annotations: List[HighlightAnnotation]
 
-    def __init__(self, removeHighlighting: RemoveTokenBasedHighlighting, commands: List[AnnotationCommand] = None):
+    def __init__(self, removeHighlighting: RemoveTokenBasedHighlighting, annotations: List[HighlightAnnotation] = None):
         super().__init__()
         self._removeHighlighting = removeHighlighting
-        self._commands = commands
+        self._annotations = annotations
 
     def __str__(self):
         return sexpr.format(self.to_sexpr())
 
     def to_sexpr(self) -> sexpr.SExpr:
         remove = self._removeHighlighting.to_sexpr()
-        return [Symbol(self.tag), qq(remove)] + [qq(cmd.to_sexpr()) for cmd in self._commands]
+        return [Symbol(self.tag), qq(remove)] + [qq(ann.to_sexpr()) for ann in self._annotations]
 
     @classmethod
     def _remove_of(cls, expr) -> 'RemoveTokenBasedHighlighting':
@@ -443,8 +443,8 @@ class HighlightAddAnnotationsResponse(Response):
             and isinstance(parsed[1], list)
             and all(sexpr.isqq(x) for x in parsed[2:])):
             remove = cls._remove_of(parsed[1])
-            commands = [AnnotationCommand.parse(expr[1]) for expr in parsed[2:]]
-            return cls(remove, commands)
+            annotations = [HighlightAnnotation.parse(expr[1]) for expr in parsed[2:]]
+            return cls(remove, annotations)
         raise ParseError(ss, cls)
 
     @property
@@ -452,8 +452,8 @@ class HighlightAddAnnotationsResponse(Response):
         return self._removeHighlighting
 
     @property
-    def commands(self) -> List[sexpr.SExpr]:
-        return self._commands
+    def annotations(self) -> List[HighlightAnnotation]:
+        return self._annotations
 
 
 @dataclass(frozen=True, slots=True)
