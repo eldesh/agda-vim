@@ -279,7 +279,7 @@ def c2b(n):
 def parseAnnotation(response):
     global annotations
     annotations += list(highlight_cmds_from_response(response))
-    logger.debug('annotations: %s' % annotations)
+    logger.debug('annotations: %s' % ('[' + ' '.join(str(annotations)) + ']'))
 
 
 def searchAnnotation(lo, hi, idx):
