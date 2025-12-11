@@ -389,8 +389,9 @@ def interpretResponse(responses, quiet = False):
             break
 
         elif isinstance(response, GiveActionResponse):
-            giveResult = response.giveResult.replace("?", "{!   !}") if isinstance(response.giveResult, GiveString) else response.giveResult
-            replaceHole(unescape(giveResult))
+            giveResult = GiveString(response.giveResult.text.replace("?", "{!   !}")) \
+                if isinstance(response.giveResult, GiveString) else response.giveResult
+            replaceHole(unescape("%s" % giveResult))
 
         # elif response.startswith('(agda2-highlight-clear)'):
             # pass # Maybe do something with this.
