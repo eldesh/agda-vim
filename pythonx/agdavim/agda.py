@@ -4,20 +4,92 @@ import logging
 from sys import version_info
 from functools import wraps
 from itertools import chain
-from typing import Iterator
+from typing import Iterator, Tuple, List, Optional
 
 from .agda_process import AgdaProcess
 from .agda_version import AgdaVersion
 from .protocol import ComputeMode, NormaliseType, NormaliseAsIsType
 from . import log
 from . import response
-from .response import InfoActionResponse, InfoActionAndCopyResponse, GoalsActionResponse, GiveActionResponse, MakeCaseActionResponse, MakeCaseActionExtendlamResponse, HighlightAddAnnotationsResponse, GiveString
+from .response import FilePosition, InfoActionResponse, InfoActionAndCopyResponse, GoalsActionResponse, GiveActionResponse, MakeCaseActionResponse, MakeCaseActionExtendlamResponse, HighlightAddAnnotationsResponse, HighlightAnnotation, GiveString, RemoveTokenBasedHighlighting
+from .response import sexpr
 
 python_cmd = 'py' if version_info.major == 2 else 'py3'
 
 logger = logging.getLogger(__name__)
 
 AGDA2_OUTPUT_PROMPT: str = "Agda2> "
+
+
+
+class HighlightCommand:
+    _from: int
+    _to: int
+    _aspects: List[str]
+    _token_based: bool
+    _info: Optional[str]
+    _filepos: Optional[FilePosition]
+
+    def __init__(self, from_: int, to: int, aspects: List[str],
+                 token_based: bool,
+                 info: Optional[str],
+                 filepos: Optional[FilePosition]):
+        self._from = from_
+        self._to = to
+        self._aspects = aspects
+        self._token_based = token_based
+        self._info = info
+        self._filepos = filepos
+
+    def __str__(self):
+        return "(from=%d, to=%d, aspects=%s, token_based=%s, info=%s, filepos=%s)" % (
+            self._from, self._to, self._aspects, self._token_based, self._info, self._filepos)
+
+    @property
+    def from_(self) -> int:
+        return self._from
+
+    @property
+    def to(self) -> int:
+        return self._to
+
+    @property
+    def aspects(self) -> List[str]:
+        return self._aspects
+
+    @property
+    def token_based(self) -> bool:
+        return self._token_based
+
+    @property
+    def info(self) -> Optional[str]:
+        return self._info
+
+    @property
+    def filepos(self) -> Optional[FilePosition]:
+        return self._filepos
+
+
+class AddHighlightCommand(HighlightCommand):
+    pass
+
+
+class RemoveHighlightCommand(HighlightCommand):
+    pass
+
+
+def highlight_cmds_from_response(resp: HighlightAddAnnotationsResponse) -> Iterator[HighlightCommand]:
+    if resp.removeHighlighting == RemoveTokenBasedHighlighting.RemoveHighlighting:
+        for ann in resp.annotations:
+            yield RemoveHighlightCommand(c2b(ann.from_-1), c2b(ann.to-1), ann.aspects,
+                                         ann.token_based is True, ann.info if ann.info is sexpr.NIL else ann.info,
+                                         FilePosition(ann.filepos.file, c2b(ann.filepos.pos-1)) if ann.filepos is not None else None)
+    else:
+        for ann in resp.annotations:
+            yield AddHighlightCommand   (c2b(ann.from_-1), c2b(ann.to), ann.aspects,
+                                         ann.token_based is True, ann.info if ann.info is sexpr.NIL else ann.info,
+                                         FilePosition(ann.filepos.file, c2b(ann.filepos.pos-1)) if ann.filepos is not None else None)
+
 
 def vim_func(vim_fname_or_func=None, conv=None):
     '''Expose a python function to vim, optionally overriding its name.'''
@@ -88,7 +160,7 @@ def vim_bool(s):
     raise ValueError("Cannot convert %s to bool" % s)
 
 def vim_int_range(start, stop, step = 1):
-    r = (range(start, stop, step))
+    r = range(start, stop, step)
     def inner(s):
         val = int(s)
         if val in r:
@@ -200,39 +272,36 @@ def getOutput() -> Iterator[response.Response]:
 
 # This is not very efficient presumably.
 def c2b(n):
+    '''Convert a character index to a byte index in the current buffer.'''
     return int(vim.eval('byteidx(join(getline(1, "$"), "\n"),%d)' % n))
 
 # See https://github.com/agda/agda/blob/323f58f9b8dad239142ed1dfa0c60338ea2cb157/src/data/emacs-mode/annotation.el#L112
-def parseAnnotation(spans):
+def parseAnnotation(response):
     global annotations
-    anns = re.findall(r'\((\d+) (\d+) \([^\)]*\) \w+ \(\"([^"]*)\" \. (\d+)\)\)', spans)
-    # TODO: This is assumed to be in sorted order.
-    logger.debug('parseAnnotation: %s' % anns)
-    for ann in anns:
-        annotations.append([c2b(int(ann[0])-1), c2b(int(ann[1])-1), ann[2], c2b(int(ann[3]))])
+    annotations += list(highlight_cmds_from_response(response))
+    logger.debug('annotations: %s' % annotations)
+
 
 def searchAnnotation(lo, hi, idx):
-    global annotations
     logger.debug('searchAnnotation: annotations=%s lo=%d hi=%d idx=%d' % (annotations, lo, hi, idx))
 
     if hi == 0: return None
 
     while hi - lo > 1:
         mid = lo + (hi - lo) // 2
-        midOffset = annotations[mid][0]
+        midOffset = annotations[mid].from_
         if idx < midOffset:
             hi = mid
         else:
             lo = mid
 
-    (loOffset, hiOffset) = annotations[lo][0:2]
+    (loOffset, hiOffset) = (annotations[lo].from_, annotations[lo].to)
     if idx > loOffset and idx <= hiOffset:
-        return annotations[lo][2:4]
+        return annotations[lo].filepos.as_tuple
     else:
         return None
 
 def gotoAnnotation():
-    global annotations
     byteOffset = int(vim.eval('line2byte(line(".")) + col(".") - 1'))
     result = searchAnnotation(0, len(annotations), byteOffset)
     if result is None: return
@@ -310,7 +379,6 @@ def interpretResponse(responses, quiet = False):
             break
 
         elif isinstance(response, MakeCaseActionResponse):
-            # '''((last . 2) . (agda2-make-case-action '("... | ♭ = ?" "... | B' `→ B'' = ?")))'''
             newcls = [ cls.replace("?", "{!   !}") for cls in response.newcls ] # this probably isn't safe
             cases = newcls
             row = vim.current.window.cursor[0]
