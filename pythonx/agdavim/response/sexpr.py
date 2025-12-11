@@ -118,15 +118,13 @@ def parse(s: str) -> SExpr:
     it = tokenize(s)
     tok = next(it)
     if tok.kind == TokenKind.LPAREN:
-        logger.debug("parse string, token: %s" % tok)
         res = list(_parse_list(it))
         try:
             extra = next(it)
         except StopIteration:
-            dot = Symbol('.')
-            if not dot in res:
+            if not DOT in res:
                 return res
-            elif len(res) == 3 and res[0] != dot and res[1] == dot and res[2] != dot:
+            elif len(res) == 3 and res[0] != DOT and res[1] == DOT and res[2] != DOT:
                 return Pair(res[0], res[2])
             else:
                 raise ValueError("Invalid dotted pair syntax: %s" % res)
