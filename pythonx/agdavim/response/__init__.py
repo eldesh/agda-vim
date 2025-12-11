@@ -2,6 +2,7 @@ from . import sexpr
 from .response import *
 __all__ = [
     "sexpr",
+    "parse_response",
     "ParseError",
     "Response",
     "ExitDoneResponse",
@@ -18,5 +19,6 @@ __all__ = [
     "MakeCaseActionResponse",
     "MakeCaseActionExtendlamResponse",
     "SolveAllActionResponse",
-    "MaybeGotoResponse"
+    "MaybeGotoResponse",
+    "FilePosition"
 ]

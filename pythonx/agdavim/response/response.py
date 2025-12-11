@@ -288,34 +288,61 @@ class RemoveTokenBasedHighlighting(IntEnum):
         raise ValueError("Invalid value for RemoveTokenBasedHighlighting: %s" % s)
 
 
+class FilePosition:
+    _file: str
+    _pos: int
+
+    def __init__(self, file: str, pos: int):
+        self._file = file
+        self._pos = pos
+
+    @property
+    def as_tuple(self) -> Tuple[str, int]:
+        return (self._file, self._pos)
+
+    @property
+    def file(self) -> str:
+        return self._file
+
+    @property
+    def pos(self) -> int:
+        return self._pos
+
+    def to_sexpr(self) -> Pair:
+        return Pair(Symbol(self._file), self._pos)
+
+    def __str__(self):
+        return sexpr.format(self.to_sexpr())
+
+
 class AnnotationCommand:
     """
     Represents an annotation command of the form:
-    > (FROM TO ASPECTS [TOKEN-BASED] [DEF-FLAG] [DEF-SITE])
+    > (FROM TO ASPECTS [TOKEN-BASED] [INFO] [FILEPOS])
     """
     _from: int
     _to: int
     _aspects: List[str]
     _token_based: Optional[Union[bool, Nil]]
-    _def_flag: Optional[Union[bool, Nil]]
-    _def_site: Optional[Tuple[str, int]]
+    _info: Optional[Union[str, Nil]]
+    _filepos: Optional[FilePosition]
 
     def __init__(self, from_: int, to: int, aspects: List[str],
-                 token_based: Optional[bool] = None,
-                 def_flag: Optional[bool] = None,
-                 def_site: Optional[Tuple[str, int]] = None):
+                 token_based: Optional[Union[bool, Nil]] = None,
+                 info: Optional[Union[str, Nil]] = None,
+                 filepos: Optional[Tuple[str, int]] = None):
         self._from = from_
         self._to = to
         self._aspects = aspects
         self._token_based = token_based
-        self._def_flag = def_flag
-        self._def_site = def_site
+        self._info = info
+        self._filepos = filepos
 
     def to_sexpr(self) -> sexpr.SExpr:
-        def_site = [] if self._def_site is None else [Pair(Symbol(self._def_site[0]), self._def_site[1])]
-        def_flag = [] if self._def_flag is None else [self._def_flag]
+        filepos = [] if self._filepos is None else [self._filepos.to_sexpr()]
+        info = [] if self._info is None else [self._info]
         token_based = [] if self._token_based is None else [self._token_based]
-        return [self._from, self._to, self._aspects] + token_based + def_flag + def_site
+        return [self._from, self._to, self._aspects] + token_based + info + filepos
 
     def __str__(self):
         return sexpr.format(self.to_sexpr())
@@ -333,26 +360,26 @@ class AnnotationCommand:
             to = expr[1]
             aspects = expr[2]
             token_based = None
-            def_flag = None
-            def_site = None
+            info = None
+            filepos = None
             if len(expr) >= 4:
                 if isinstance(expr[3], (bool, Nil)):
                     token_based = expr[3]
                 else:
                     raise ParseError(expr, cls)
             if len(expr) >= 5:
-                if isinstance(expr[4], (bool, Nil)):
-                    def_flag = expr[4]
+                if isinstance(expr[4], (str, Nil)):
+                    info = expr[4]
                 else:
                     raise ParseError(expr, cls)
             if len(expr) == 6:
                 if (isinstance(expr[5], Pair)
                     and isinstance(expr[5].car, Symbol)
                     and isinstance(expr[5].cdr, int)):
-                    def_site = (expr[5].car.name, expr[5].cdr)
+                    filepos = FilePosition(expr[5].car.name, expr[5].cdr)
                 else:
                     raise ParseError(expr, cls)
-            return cls(from_, to, aspects, token_based, def_flag, def_site)
+            return cls(from_, to, aspects, token_based, info, filepos)
         raise ParseError(expr, cls)
 
 
@@ -373,12 +400,12 @@ class AnnotationCommand:
         return self._token_based
 
     @property
-    def def_flag(self) -> Optional[Union[bool, Nil]]:
-        return self._def_flag
+    def info(self) -> Optional[Union[str, Nil]]:
+        return self._info
 
     @property
-    def def_site(self) -> Optional[Tuple[str, int]]:
-        return self._def_site
+    def filepos(self) -> Optional[FilePosition]:
+        return self._filepos
 
 
 class HighlightAddAnnotationsResponse(Response):

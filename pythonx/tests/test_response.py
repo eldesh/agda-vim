@@ -13,8 +13,12 @@ import agdavim.log
 
 class TestResponse(unittest.TestCase):
     def assert_response(self, cls: type[Any], str: str):
-        # print("%s -> %s" % (str, cls.parse(str)))
         self.assertEqual("%s" % cls.parse(str), str)
+
+    def assert_response_general(self, cls: type[Any], str: str):
+        res = parse_response(str)
+        self.assertIsInstance(res, cls)
+        self.assertEqual("%s" % res, str)
 
     def test_exit_done_response_roundtrip(self):
         self.assert_response(ExitDoneResponse, '(agda2-exit-done)')
@@ -82,6 +86,7 @@ class TestResponse(unittest.TestCase):
         self.assert_response(HighlightAddAnnotationsResponse, "(agda2-highlight-add-annotations 'remove '(1 27 (background) t))")
         self.assert_response(HighlightAddAnnotationsResponse, "(agda2-highlight-add-annotations 'remove '(1 7 (keyword) t))")
         self.assert_response(HighlightAddAnnotationsResponse, "(agda2-highlight-add-annotations 'remove '(1 27 (background) t) '(27 28 (background) t) '(28 39 (background) t) '(39 40 (background) t) '(40 52 (markup) t) '(53 62 (keyword) t) '(65 66 (symbol) t) '(71 81 (markup) t) '(81 82 (background) t))")
+        self.assert_response(HighlightAddAnnotationsResponse, "(agda2-highlight-add-annotations 'nil '(37 38 (unsolvedmeta)) '(60 63 (error) nil \"Issue157.agda:8.9-12: error: [UnequalSorts] Set₁       │  != Set when checking that the expression Set has type Set\"))")
 
     def test_info_action_and_copy_response_roundtrip(self):
         self.assert_response(InfoActionAndCopyResponse, '''(agda2-info-action-and-copy "*Helper function*" "id' : ∀ {A} → A → A " nil)''')
@@ -191,6 +196,9 @@ class TestResponse(unittest.TestCase):
         self.assert_response(MaybeGotoResponse, '''((last . 3) . (agda2-maybe-goto '("Issue2447/Type-error.agda" . 82)))''')
         self.assert_response(MaybeGotoResponse, '''((last . 3) . (agda2-maybe-goto '("Issue2487/B.agda" . 50)))''')
         self.assert_response(MaybeGotoResponse, '''((last . 3) . (agda2-maybe-goto '("Issue2575/M.agda" . 39)))''')
+
+    def test_general_response_roundtrip(self):
+        self.assert_response_general(HighlightAddAnnotationsResponse, '''(agda2-highlight-add-annotations 'nil '(195 196 (error) nil "/path/to/file.agda:9,12-13\nCannot split into projections because the target type a == a is\nnot a record type\nwhen checking that the expression ? has tye a == a"))''')
 
 
 if __name__ == '__main__':
