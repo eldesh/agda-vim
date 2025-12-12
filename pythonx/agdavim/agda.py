@@ -184,9 +184,21 @@ agda = None
 goals = {}
 annotations = []
 
+def agda2_quote_char(c):
+    '''Convert a character to its Haskell escaped representation.'''
+    ord_c = ord(c)
+    if ord_c < 128:
+        return c
+    return "\\x%x\&" % ord_c
+
+def agda2_quote_list(ss: Iterator[str]) -> str:
+    '''Convert a list of strings to its Haskell string list representation.'''
+    return '[' + ', '.join(escape(s) for s in ss) + ']'
+
 # This technically needs to turn a string into a Haskell escaped string, buuuut just gonna cheat.
 def escape(s):
-    return s.replace('\\', '\\\\').replace('"', '\\"').replace('\n','\\n') # keep '\\' case first
+    estr = s.replace('\\', '\\\\').replace('\n','\\n') # keep '\\' case first
+    return ''.join(agda2_quote_char(c) for c in estr)
 
 # This technically needs to turn a Haskell escaped string into a string, buuuut just gonna cheat.
 def unescape(s):
@@ -414,10 +426,10 @@ def sendCommandLoadHighlightInfo(file, quiet):
 
 def sendCommandLoad(file, quiet):
     if agda.version < AgdaVersion(2,5,0,0): # in 2.5 they changed it so Cmd_load takes commandline arguments
-        incpaths_str = ",".join(map(lambda x: x.decode('utf-8'), vim.vars['agdavim_agda_includepathlist']))
+        incpaths = (path.decode('utf-8') for path in vim.vars['agdavim_agda_includepathlist'])
     else:
-        incpaths_str = "\"-i\"," + ",\"-i\",".join(map(lambda x: x.decode('utf-8'), vim.vars['agdavim_agda_includepathlist']))
-    sendCommand('Cmd_load "%s" [%s]' % (escape(file), incpaths_str), quiet = quiet)
+        incpaths = (x for path in vim.vars['agdavim_agda_includepathlist'] for x in ['"-i"', path.decode('utf-8')])
+    sendCommand('Cmd_load "%s" %s' % (escape(file), agda2_quote_list(incpaths)), quiet = quiet)
 
 #def getIdentifierAtCursor():
 #    (r, c) = vim.current.window.cursor
