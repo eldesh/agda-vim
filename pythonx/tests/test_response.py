@@ -38,6 +38,7 @@ class TestResponse(unittest.TestCase):
 
     def test_highlight_load_and_delete_action_response_roundtrip(self):
         self.assert_response(HighlightLoadAndDeleteActionResponse, '(agda2-highlight-load-and-delete-action)')
+        self.assert_response(HighlightLoadAndDeleteActionResponse, '(agda2-highlight-load-and-delete-action "/tmp/agda2-mode141034-1")')
 
     def test_verbose_response_roundtrip(self):
         self.assert_response(VerboseResponse, '(agda2-verbose "Checked A.")')

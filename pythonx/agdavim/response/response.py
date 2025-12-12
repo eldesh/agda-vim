@@ -98,20 +98,32 @@ class HighlightClearResponse(Response):
 class HighlightLoadAndDeleteActionResponse(Response):
     TAG: ClassVar[str] = "agda2-highlight-load-and-delete-action"
 
-    def __init__(self):
+    _file: Optional[str]
+
+    def __init__(self, file: Optional[str]):
         super().__init__()
+        self._file = file
 
     def __str__(self):
         return sexpr.format(self.to_sexpr())
 
     def to_sexpr(self) -> sexpr.SExpr:
-        return [Symbol(self.TAG)]
+        return [Symbol(self.TAG)] + ([] if self._file is None else [self._file])
+
+    @property
+    def file(self) -> Optional[str]:
+        return self._file
 
     @classmethod
-    def parse(cls, str) -> 'HighlightLoadAndDeleteActionResponse':
-        if sexpr.parse(str) == [Symbol(cls.TAG)]:
+    def parse(cls, ss) -> 'HighlightLoadAndDeleteActionResponse':
+        parsed = sexpr.parse(ss)
+        if (isinstance(parsed, list)
+            and 1 <= len(parsed)
+            and parsed[0] == Symbol(cls.TAG)):
+            if len(parsed) == 2 and isinstance(parsed[1], str):
+                return cls(parsed[1])
             return cls()
-        raise ParseError(str, cls)
+        raise ParseError(ss, cls)
 
 
 class VerboseResponse(Response):
