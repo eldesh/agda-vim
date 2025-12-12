@@ -428,7 +428,7 @@ def sendCommandLoad(file, quiet):
     if agda.version < AgdaVersion(2,5,0,0): # in 2.5 they changed it so Cmd_load takes commandline arguments
         incpaths = (path.decode('utf-8') for path in vim.vars['agdavim_agda_includepathlist'])
     else:
-        incpaths = (x for path in vim.vars['agdavim_agda_includepathlist'] for x in ['"-i"', path.decode('utf-8')])
+        incpaths = (x for path in vim.vars['agdavim_agda_includepathlist'] for x in ['-i', path.decode('utf-8')])
     sendCommand('Cmd_load %s %s' % (escape(file), agda2_quote_list(incpaths)), quiet = quiet)
 
 #def getIdentifierAtCursor():

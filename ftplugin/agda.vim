@@ -58,7 +58,6 @@ function! s:AgdaSetMakePrg() abort
 endfunction
 
 let g:agdavim_agda_includepathlist = deepcopy(['.'] + get(g:, 'agda_extraincpaths', []))
-call map(g:agdavim_agda_includepathlist, ' ''"'' . v:val . ''"'' ')
 call s:AgdaSetMakePrg()
 let b:undo_ftplugin .= ' | setlocal makeprg<'
 
