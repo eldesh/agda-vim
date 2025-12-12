@@ -3,13 +3,14 @@ from unittest import mock
 import sys
 import types
 from typing import Any
+import logging
 
 fake_vim = types.ModuleType("vim")
 fake_vim.command = lambda x: ()
 sys.modules["vim"] = fake_vim
 
 from agdavim.response import *
-import agdavim.log
+from agdavim import log
 
 class TestResponse(unittest.TestCase):
     def assert_response(self, cls: type[Any], str: str):
