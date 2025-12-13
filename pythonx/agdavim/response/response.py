@@ -354,7 +354,7 @@ class HighlightAnnotation:
         filepos = [] if self._filepos is None else [self._filepos.to_sexpr()]
         info = [] if self._info is None else [self._info]
         token_based = [] if self._token_based is None else [self._token_based]
-        return [self._from, self._to, self._aspects] + token_based + info + filepos
+        return [self._from, self._to, [ Symbol(asp) for asp in self._aspects ]] + token_based + info + filepos
 
     def __str__(self):
         return sexpr.format(self.to_sexpr())
@@ -370,7 +370,7 @@ class HighlightAnnotation:
             and all(isinstance(x, Symbol) for x in expr[2])):
             from_ = expr[0]
             to = expr[1]
-            aspects = expr[2]
+            aspects = [ sym.name for sym in expr[2] ]
             token_based = None
             info = None
             filepos = None
