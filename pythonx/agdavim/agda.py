@@ -288,40 +288,47 @@ def parseAnnotation(response):
     # logger.debug('annotations: %s' % ('[' + ' '.join([str(ann) for ann in annotations[:8]]) + ']'))
 
 
+def searchAnnotation(anns: List[HighlightCommand], idx: int) -> Optional[FilePosition]:
+    """Search for an annotation covering the given byte index.
+    Assumes anns is sorted in ascending order by from_ field.
+    """
+    # logger.debug('searchAnnotation: %s: %d' % ([ [ann.from_, ann.to, str(ann.filepos)] for ann in annotations[:8] ], idx))
 
-def searchAnnotation(lo, hi, idx):
-    logger.debug('searchAnnotation: annotations=%s lo=%d hi=%d idx=%d' % (annotations, lo, hi, idx))
+    if not anns:
+        return None
 
-    if hi == 0: return None
+    lo = 0
+    hi = len(anns)
 
     while hi - lo > 1:
         mid = lo + (hi - lo) // 2
-        midOffset = annotations[mid].from_
-        if idx < midOffset:
+        if idx < anns[mid].from_:
             hi = mid
         else:
             lo = mid
 
-    (loOffset, hiOffset) = (annotations[lo].from_, annotations[lo].to)
-    if idx > loOffset and idx <= hiOffset:
-        return annotations[lo].filepos.as_tuple
+    if anns[lo].from_ < idx <= anns[lo].to:
+        return anns[lo].filepos
     else:
         return None
 
 def gotoAnnotation():
+    # Get the byte offset of the current cursor.
     byteOffset = int(vim.eval('line2byte(line(".")) + col(".") - 1'))
-    result = searchAnnotation(0, len(annotations), byteOffset)
-    if result is None: return
-    (file, pos) = result
-    targetBuffer = None
-    for buffer in vim.buffers:
-        if buffer.name == file: targetBuffer = buffer.number
+    filepos = searchAnnotation(annotations, byteOffset)
+    if filepos is None:
+        return
+
+    targetBuffer = next(
+        (b for b in vim.buffers if b.name == filepos.file),
+        None,
+    )
 
     if targetBuffer is None:
-        vim.command('edit %s' % file)
+        vim.command('edit %s' % filepos.file)
     else:
-        vim.command('buffer %s' % targetBuffer)
-    vim.command('%dgo' % pos)
+        vim.command('buffer %s' % targetBuffer.number)
+    vim.command('%dgo' % filepos.pos)
 
 def interpretResponse(responses, quiet = False):
     global agda
