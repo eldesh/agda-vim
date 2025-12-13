@@ -86,7 +86,7 @@ def highlight_cmds_from_response(resp: HighlightAddAnnotationsResponse) -> Itera
                                          FilePosition(ann.filepos.file, c2b(ann.filepos.pos-1)) if ann.filepos is not None else None)
     else:
         for ann in resp.annotations:
-            yield AddHighlightCommand   (c2b(ann.from_-1), c2b(ann.to), ann.aspects,
+            yield AddHighlightCommand   (c2b(ann.from_-1), c2b(ann.to-1), ann.aspects,
                                          ann.token_based is True, ann.info if ann.info is sexpr.NIL else ann.info,
                                          FilePosition(ann.filepos.file, c2b(ann.filepos.pos-1)) if ann.filepos is not None else None)
 
