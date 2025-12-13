@@ -416,9 +416,9 @@ def interpretResponse(responses, quiet = False):
 def sendCommand(arg, quiet=False):
     vim.command('silent! write')
     f = vim.current.buffer.name
-    logger.debug('IOTCM %s None Indirect (%s)\nx\n' % (escape(f), arg))
+    logger.debug('IOTCM %s NonInteractive Direct (%s)\nx\n' % (escape(f), arg))
     # The x is a really hacky way of getting a consistent final response.  Namely, "cannot read"
-    agda.stdin.write('IOTCM %s None Indirect (%s)\nx\n' % (escape(f), arg))
+    agda.stdin.write('IOTCM %s NonInteractive Direct (%s)\nx\n' % (escape(f), arg))
     interpretResponse(getOutput(), quiet)
 
 def sendCommandLoadHighlightInfo(file, quiet):
