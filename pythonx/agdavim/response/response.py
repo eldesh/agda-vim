@@ -100,7 +100,7 @@ class HighlightLoadAndDeleteActionResponse(Response):
 
     _file: Optional[str]
 
-    def __init__(self, file: Optional[str]):
+    def __init__(self, file: Optional[str] = None):
         super().__init__()
         self._file = file
 
