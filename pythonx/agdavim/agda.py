@@ -70,25 +70,17 @@ class HighlightCommand:
         return self._filepos
 
 
-class AddHighlightCommand(HighlightCommand):
-    pass
 
 
-class RemoveHighlightCommand(HighlightCommand):
-    pass
 
 
 def highlight_cmds_from_response(resp: HighlightAddAnnotationsResponse) -> Iterator[HighlightCommand]:
-    if resp.removeHighlighting == RemoveTokenBasedHighlighting.RemoveHighlighting:
-        for ann in resp.annotations:
-            yield RemoveHighlightCommand(c2b(ann.from_-1), c2b(ann.to-1), ann.aspects,
-                                         ann.token_based is True, ann.info if ann.info is sexpr.NIL else ann.info,
-                                         FilePosition(ann.filepos.file, c2b(ann.filepos.pos-1)) if ann.filepos is not None else None)
-    else:
-        for ann in resp.annotations:
-            yield AddHighlightCommand   (c2b(ann.from_-1), c2b(ann.to-1), ann.aspects,
-                                         ann.token_based is True, ann.info if ann.info is sexpr.NIL else ann.info,
-                                         FilePosition(ann.filepos.file, c2b(ann.filepos.pos-1)) if ann.filepos is not None else None)
+    for ann in resp.annotations:
+        filepos_opt = FilePosition(ann.filepos.file, c2b(ann.filepos.pos-1)) if ann.filepos is not None else None
+        yield HighlightCommand(c2b(ann.from_-1), c2b(ann.to-1), ann.aspects,
+                                ann.token_based is True,
+                                None if ann.info is sexpr.NIL else ann.info,
+                                filepos_opt)
 
 
 def vim_func(vim_fname_or_func=None, conv=None):
@@ -290,8 +282,11 @@ def c2b(n):
 # See https://github.com/agda/agda/blob/323f58f9b8dad239142ed1dfa0c60338ea2cb157/src/data/emacs-mode/annotation.el#L112
 def parseAnnotation(response):
     global annotations
-    annotations += list(highlight_cmds_from_response(response))
-    logger.debug('annotations: %s' % ('[' + ' '.join(str(annotations)) + ']'))
+    # if response.removeHighlighting == RemoveTokenBasedHighlighting.RemoveHighlighting:
+    #    TODO: Remove token based highlighting
+    annotations = list(highlight_cmds_from_response(response))
+    # logger.debug('annotations: %s' % ('[' + ' '.join([str(ann) for ann in annotations[:8]]) + ']'))
+
 
 
 def searchAnnotation(lo, hi, idx):
