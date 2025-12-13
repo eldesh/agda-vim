@@ -321,7 +321,7 @@ class FilePosition:
         return self._pos
 
     def to_sexpr(self) -> Pair:
-        return Pair(Symbol(self._file), self._pos)
+        return Pair(self._file, self._pos)
 
     def __str__(self):
         return sexpr.format(self.to_sexpr())
@@ -361,7 +361,7 @@ class HighlightAnnotation:
 
     @classmethod
     def parse(cls, expr: sexpr.SExpr) -> 'HighlightAnnotation':
-        # e.g. [Symbol(name='quote'), [94, 95, [Symbol(name='function')], nil, nil, Pair(car=Symbol(name='Issue4954-2.agda'), cdr=94)]]
+        # e.g. [94, 95, [Symbol(name='function')], nil, nil, Pair(car="Issue4954-2.agda", cdr=94)]
         if (isinstance(expr, list)
             and 3 <= len(expr) <= 6
             and isinstance(expr[0], int)
@@ -386,9 +386,9 @@ class HighlightAnnotation:
                     raise ParseError(expr, cls)
             if len(expr) == 6:
                 if (isinstance(expr[5], Pair)
-                    and isinstance(expr[5].car, Symbol)
+                    and isinstance(expr[5].car, str)
                     and isinstance(expr[5].cdr, int)):
-                    filepos = FilePosition(expr[5].car.name, expr[5].cdr)
+                    filepos = FilePosition(expr[5].car, expr[5].cdr)
                 else:
                     raise ParseError(expr, cls)
             return cls(from_, to, aspects, token_based, info, filepos)
