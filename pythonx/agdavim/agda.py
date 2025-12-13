@@ -8,6 +8,7 @@ from typing import Iterator, Tuple, List, Optional
 
 from .agda_process import AgdaProcess
 from .agda_version import AgdaVersion
+from .highlight import HighlightLevel
 from .protocol import ComputeMode, NormaliseType, NormaliseAsIsType
 from . import log
 from . import response
@@ -181,6 +182,8 @@ def vim_normalise_asis(s):
 # start Agda
 # TODO: I'm pretty sure this will start an agda process per buffer which is less than desirable...
 agda = None
+
+highlight_level = HighlightLevel.NON_INTERACTIVE
 
 goals = {}
 annotations = []
@@ -424,12 +427,13 @@ def interpretResponse(responses, quiet = False):
         else:
             pass # print(response)
 
-def sendCommand(arg, quiet=False):
+def sendCommand(arg, highlight=False, quiet=False):
     vim.command('silent! write')
     f = vim.current.buffer.name
-    logger.debug('IOTCM %s NonInteractive Direct (%s)\nx\n' % (escape(f), arg))
+    _highlight_level = highlight_level if highlight else HighlightLevel.NONE
+    logger.debug('IOTCM %s %s Indirect (%s)\nx\n' % (escape(f), _highlight_level, arg))
     # The x is a really hacky way of getting a consistent final response.  Namely, "cannot read"
-    agda.stdin.write('IOTCM %s NonInteractive Direct (%s)\nx\n' % (escape(f), arg))
+    agda.stdin.write('IOTCM %s %s Indirect (%s)\nx\n' % (escape(f), _highlight_level, arg))
     interpretResponse(getOutput(), quiet)
 
 def sendCommandLoadHighlightInfo(file, quiet):
