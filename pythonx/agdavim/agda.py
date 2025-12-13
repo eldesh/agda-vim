@@ -42,8 +42,17 @@ class HighlightCommand:
         self._filepos = filepos
 
     def __str__(self):
-        return "(from=%d, to=%d, aspects=%s, token_based=%s, info=%s, filepos=%s)" % (
-            self._from, self._to, self._aspects, self._token_based, self._info, self._filepos)
+        aspects = '(' + ' '.join(self._aspects) + ')'
+        token_based = 't' if self._token_based else 'f'
+        if self.filepos is None and self.info is None:
+            return "(%d %d %s %s)" % (
+                self._from, self._to, aspects, token_based)
+        if self.filepos is None:
+            return "(%d %d %s %s %s)" % (
+                self._from, self._to, aspects, token_based, self._info)
+        else:
+            return "(%d %d %s %s %s %s)" % (
+                self._from, self._to, aspects, token_based, self._info, self._filepos)
 
     @property
     def from_(self) -> int:
