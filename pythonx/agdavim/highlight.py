@@ -4,6 +4,18 @@ from enum import Enum, auto, unique
 logger = logging.getLogger(__name__)
 
 @unique
+class Remove(Enum):
+    REMOVE = auto()
+    KEEP = auto()
+
+    def __str__(self):
+        if self == Remove.REMOVE:
+            return "Remove"
+        if self == Remove.KEEP:
+            return "Keep"
+        raise ValueError("Unknown Remove: %s" % self)
+
+@unique
 class HighlightLevel(Enum):
     NONE = auto()
     NON_INTERACTIVE = auto()

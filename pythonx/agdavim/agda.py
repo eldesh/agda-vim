@@ -8,7 +8,7 @@ from typing import Iterator, Tuple, List, Optional
 
 from .agda_process import AgdaProcess
 from .agda_version import AgdaVersion
-from .highlight import HighlightLevel
+from .highlight import HighlightLevel, Remove as HighlightRemove
 from .protocol import ComputeMode, NormaliseType, NormaliseAsIsType
 from . import log
 from . import response
@@ -524,6 +524,13 @@ def AgdaRestartAgda(path):
     else:
         logger.info("Restarting Agda process with new path: %s" % path)
         agda.restart(path)
+
+
+@vim_func(conv={'quiet': vim_bool})
+def AgdaHighlightToken(quiet):
+    filename = vim.current.buffer.name
+    sendCommand('Cmd_tokenHighlighting %s %s' % (escape(filename), HighlightRemove.KEEP), quiet = quiet)
+
 
 @vim_func
 def AgdaQuitAgda():
