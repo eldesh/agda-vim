@@ -354,7 +354,7 @@ class HighlightAnnotation:
     def __init__(self, from_: int, to: int, aspects: List[str],
                  token_based: Optional[Union[bool, Nil]] = None,
                  info: Optional[Union[str, Nil]] = None,
-                 filepos: Optional[Tuple[str, int]] = None):
+                 filepos: Optional[FilePosition] = None):
         self._from = from_
         self._to = to
         self._aspects = aspects
