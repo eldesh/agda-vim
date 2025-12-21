@@ -435,14 +435,14 @@ def sendCommand(arg, highlight = False, quiet = False):
     interpretResponse(getOutput(), quiet)
 
 def sendCommandLoadHighlightInfo(file, quiet):
-    sendCommand('Cmd_load_highlighting_info %s' % escape(file), quiet = quiet)
+    sendCommand('Cmd_load_highlighting_info %s' % escape(file), highlight = True, quiet = quiet)
 
 def sendCommandLoad(file, quiet):
     if agda.version < AgdaVersion(2,5,0,0): # in 2.5 they changed it so Cmd_load takes commandline arguments
         incpaths = (path.decode('utf-8') for path in vim.vars['agdavim_agda_includepathlist'])
     else:
         incpaths = (x for path in vim.vars['agdavim_agda_includepathlist'] for x in ['-i', path.decode('utf-8')])
-    sendCommand('Cmd_load %s %s' % (escape(file), agda2_quote_list(incpaths)), quiet = quiet)
+    sendCommand('Cmd_load %s %s' % (escape(file), agda2_quote_list(incpaths)), highlight = True, quiet = quiet)
 
 #def getIdentifierAtCursor():
 #    (r, c) = vim.current.window.cursor
@@ -530,7 +530,7 @@ def AgdaRestartAgda(path):
 @vim_func(conv={'quiet': vim_bool})
 def AgdaHighlightToken(quiet):
     filename = vim.current.buffer.name
-    sendCommand('Cmd_tokenHighlighting %s %s' % (escape(filename), HighlightRemove.KEEP), quiet = quiet)
+    sendCommand('Cmd_tokenHighlighting %s %s' % (escape(filename), HighlightRemove.KEEP), highlight = True, quiet = quiet)
 
 
 @vim_func
@@ -545,7 +545,7 @@ def AgdaQuitAgda():
 
 @vim_func(conv={'quiet': vim_bool})
 def AgdaShowVersion(quiet):
-    sendCommand('Cmd_show_version', quiet=quiet)
+    sendCommand('Cmd_show_version', highlight = False, quiet = quiet)
 
 
 @vim_func(conv={'quiet': vim_bool})
