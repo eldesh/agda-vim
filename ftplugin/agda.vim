@@ -285,6 +285,10 @@ command! -buffer -nargs=? AgdaDisplayImplicitArguments call AgdaDisplayImplicitA
 command! -buffer -nargs=0 AgdaToggleImplicitArguments call AgdaDisplayImplicitArguments(0)
 command! -buffer -nargs=0 AgdaShowImplicitArguments call AgdaDisplayImplicitArguments(1)
 command! -buffer -nargs=0 AgdaHideImplicitArguments call AgdaDisplayImplicitArguments(2)
+command! -buffer -nargs=? AgdaDisplayIrrelevantArguments call AgdaDisplayIrrelevantArguments(<f-args>)
+command! -buffer -nargs=0 AgdaToggleIrrelevantArguments call AgdaDisplayIrrelevantArguments(0)
+command! -buffer -nargs=0 AgdaShowIrrelevantArguments call AgdaDisplayIrrelevantArguments(1)
+command! -buffer -nargs=0 AgdaHideIrrelevantArguments call AgdaDisplayIrrelevantArguments(2)
 command! -buffer -nargs=0 AgdaConstraints exec s:python_cmd "sendCommand('Cmd_constraints')"
 command! -buffer -nargs=1 AgdaShowGoals call AgdaShowGoals(<f-args>)
 command! -buffer -nargs=0 AgdaSolveAll exec s:python_cmd "sendCommand('Cmd_solveAll')"
@@ -325,6 +329,7 @@ nnoremap <buffer> <LocalLeader>f :<C-u>call AgdaGotoAnnotation()<CR>
 nnoremap <buffer> <LocalLeader>m :<C-u>call AgdaShowGoals(v:count)<CR>
 nnoremap <buffer> <LocalLeader>z :<C-u>call AgdaSearchAbout(v:count)<CR>
 nnoremap <buffer> <LocalLeader>xh :<C-u>call AgdaDisplayImplicitArguments(v:count)<CR>
+nnoremap <buffer> <LocalLeader>xi :<C-u>call AgdaDisplayIrrelevantArguments(v:count)<CR>
 nnoremap <buffer> <LocalLeader>xr :<C-u>AgdaRestart<CR>
 nnoremap <buffer> <LocalLeader>xq :<C-u>AgdaQuitAgda<CR>
 

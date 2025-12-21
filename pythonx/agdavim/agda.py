@@ -605,6 +605,21 @@ def AgdaDisplayImplicitArguments(arg: int):
         return sendCommand('ShowImplicitArgs False', highlight = True)
 
 
+@vim_func(conv={'arg': vim_int_range(0,3)})
+def AgdaDisplayIrrelevantArguments(arg: int):
+    """Toggle display of irrelevant arguments.
+
+    Arguments:
+        arg: 0 to toggle display of irrelevant arguments, 1 to turn on, 2 to turn off.
+    """
+    if arg == 0:
+        return sendCommand('ToggleIrrelevantArgs', highlight = True)
+    if arg == 1:
+        return sendCommand('ShowIrrelevantArgs True', highlight = True)
+    if arg == 2:
+        return sendCommand('ShowIrrelevantArgs False', highlight = True)
+
+
 @vim_func(conv={'useforce': vim_int_range(0,2)})
 def AgdaGive(useforce: int):
     if agda.version < AgdaVersion(2,5,3,0):
