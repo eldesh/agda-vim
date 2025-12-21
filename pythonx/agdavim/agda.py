@@ -662,6 +662,18 @@ def AgdaAutoMaybeAll(quiet):
 
 
 @vim_func(conv={'normalise': vim_normalise})
+def AgdaGoalType(normalise):
+    """Show the type of the goal at point"""
+    result = getHoleBodyAtCursor()
+    if result is None:
+        print("No hole under the cursor")
+    elif result[1] is None:
+        print("Goal not loaded")
+    else:
+        sendCommand('Cmd_goal_type %s %d noRange %s' % (normalise.name, result[1], escape(result[0])))
+
+
+@vim_func(conv={'normalise': vim_normalise})
 def AgdaGoalAndContext(normalise):
     '''Shows the type of the goal at point and the current context'''
     result = getHoleBodyAtCursor()
@@ -724,18 +736,6 @@ def AgdaInferTypeMaybeToplevel(normalise):
         print("Goal not loaded")
     else:
         sendCommand('Cmd_infer %s %d noRange %s' % (normalise.name, result[1], escape(result[0])))
-
-
-@vim_func(conv={'normalise': vim_normalise})
-def AgdaGoalType(normalise):
-    """Show the type of the goal at point"""
-    result = getHoleBodyAtCursor()
-    if result is None:
-        print("No hole under the cursor")
-    elif result[1] is None:
-        print("Goal not loaded")
-    else:
-        sendCommand('Cmd_goal_type %s %d noRange %s' % (normalise.name, result[1], escape(result[0])))
 
 
 @vim_func(conv={'computeMode': vim_compute_mode})
