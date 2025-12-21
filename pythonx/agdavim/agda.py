@@ -183,8 +183,6 @@ def vim_normalise_asis(s):
 # TODO: I'm pretty sure this will start an agda process per buffer which is less than desirable...
 agda = None
 
-highlight_level = HighlightLevel.NON_INTERACTIVE
-
 goals = {}
 annotations = []
 
@@ -427,10 +425,10 @@ def interpretResponse(responses, quiet = False):
         else:
             pass # print(response)
 
-def sendCommand(arg, highlight=False, quiet=False):
+def sendCommand(arg, highlight = False, quiet = False):
     vim.command('silent! write')
     f = vim.current.buffer.name
-    _highlight_level = highlight_level if highlight else HighlightLevel.NONE
+    _highlight_level = Agda2HighlightLevel() if highlight else HighlightLevel.NONE
     logger.debug('IOTCM %s %s Indirect (%s)\nx\n' % (escape(f), _highlight_level, arg))
     # The x is a really hacky way of getting a consistent final response.  Namely, "cannot read"
     agda.stdin.write('IOTCM %s %s Indirect (%s)\nx\n' % (escape(f), _highlight_level, arg))
@@ -510,6 +508,9 @@ def getHoleBodyAtCursor():
 def getWordAtCursor():
     return vim.eval("expand('<cword>')").strip()
 
+
+def Agda2HighlightLevel() -> HighlightLevel:
+    return HighlightLevel.parse(vim.vars['agdavim_highlight_level'].decode('utf-8'))
 
 ## Directly exposed functions: {
 

@@ -15,6 +15,13 @@ class Remove(Enum):
             return "Keep"
         raise ValueError("Unknown Remove: %s" % self)
 
+    def parse(s: str) -> 'Remove':
+        if s == "Remove":
+            return Remove.REMOVE
+        if s == "Keep":
+            return Remove.KEEP
+        raise ValueError("Unknown Remove string: %s" % s)
+
 @unique
 class HighlightLevel(Enum):
     NONE = auto()
@@ -29,4 +36,13 @@ class HighlightLevel(Enum):
         if self == HighlightLevel.INTERACTIVE:
             return "Interactive"
         raise ValueError("Unknown HighlightLevel: %s" % self)
+
+    def parse(s: str) -> 'HighlightLevel':
+        if s == "None":
+            return HighlightLevel.NONE
+        if s == "NonInteractive":
+            return HighlightLevel.NON_INTERACTIVE
+        if s == "Interactive":
+            return HighlightLevel.INTERACTIVE
+        raise ValueError("Unknown HighlightLevel string: %s" % s)
 
