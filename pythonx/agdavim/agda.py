@@ -594,14 +594,15 @@ def AgdaLoadHighlightInfo(quiet):
 def AgdaGotoAnnotation():
     gotoAnnotation()
 
+
 @vim_func(conv={'arg': vim_int_range(0,3)})
 def AgdaDisplayImplicitArguments(arg: int):
     if arg == 0:
-        return sendCommand('ToggleImplicitArgs')
+        return sendCommand('ToggleImplicitArgs', highlight = True)
     if arg == 1:
-        return sendCommand('ShowImplicitArgs True')
+        return sendCommand('ShowImplicitArgs True', highlight = True)
     if arg == 2:
-        return sendCommand('ShowImplicitArgs False')
+        return sendCommand('ShowImplicitArgs False', highlight = True)
 
 
 @vim_func(conv={'useforce': vim_int_range(0,2)})
