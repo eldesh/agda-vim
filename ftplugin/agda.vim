@@ -308,7 +308,7 @@ nnoremap <buffer> <LocalLeader>l :<C-u>AgdaLoad<CR>
 nnoremap <buffer> <LocalLeader>t :<C-u>call AgdaInferTypeMaybeToplevel(v:count)<CR>
 nnoremap <buffer> <LocalLeader>r :<C-u>call AgdaRefine(v:false)<CR>
 nnoremap <buffer> <LocalLeader>R :<C-u>call AgdaRefine(v:true)<CR>
-nnoremap <buffer> <LocalLeader>g :<C-u>call AgdaGive()<CR>
+nnoremap <buffer> <LocalLeader>g :<C-u>call AgdaGive(v:count)<CR>
 nnoremap <buffer> <LocalLeader>c :<C-u>call AgdaMakeCase()<CR>
 nnoremap <buffer> <LocalLeader>a :<C-u>call AgdaAuto()<CR>
 nnoremap <buffer> <LocalLeader>e :<C-u>call AgdaShowContext(v:count)<CR>

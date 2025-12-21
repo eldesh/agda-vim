@@ -1,6 +1,7 @@
 import vim
 import re
 import logging
+from enum import Enum, auto, unique
 from sys import version_info
 from functools import wraps
 from itertools import chain
@@ -21,6 +22,17 @@ logger = logging.getLogger(__name__)
 
 AGDA2_OUTPUT_PROMPT: str = "Agda2> "
 
+
+@unique
+class UsePrefixArgs(Enum):
+    WITH_FORCE = auto()
+    WITHOUT_FORCE = auto()
+
+    def __str__(self) -> str:
+        if self == UsePrefixArgs.WITH_FORCE:
+            return "WithForce"
+        else:
+            return "WithoutForce"
 
 
 class HighlightCommand:
@@ -575,15 +587,15 @@ def AgdaDisplayImplicitArguments(arg: int):
     if arg == 2:
         return sendCommand('ShowImplicitArgs False')
 
-@vim_func
-def AgdaGive():
-    result = getHoleBodyAtCursor()
 
+@vim_func(conv={'useforce': vim_int_range(0,2)})
+def AgdaGive(useforce: int):
     if agda.version < AgdaVersion(2,5,3,0):
         useForce = ""
     else:
-        useForce = "WithoutForce" # or WithForce
+        useForce = UsePrefixArgs.WITHOUT_FORCE if useforce == 0 else UsePrefixArgs.WITH_FORCE
 
+    result = getHoleBodyAtCursor()
     if result is None:
         print("No hole under the cursor")
     elif result[1] is None:
