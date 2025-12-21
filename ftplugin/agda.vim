@@ -304,8 +304,9 @@ command! -buffer -nargs=? -complete=file AgdaRestart
     \ endif |
     \ call AgdaRestart(g:agdavim_agda_path)
 
-nnoremap <buffer> <LocalLeader>l :<C-u>AgdaLoad<CR>
-nnoremap <buffer> <LocalLeader>t :<C-u>call AgdaInferTypeMaybeToplevel(v:count)<CR>
+nnoremap <buffer> <LocalLeader>l :<C-u>call AgdaLoad(v:false)<CR>
+nnoremap <buffer> <LocalLeader>d :<C-u>call AgdaInferTypeMaybeToplevel(v:count)<CR>
+nnoremap <buffer> <LocalLeader>t :<C-u>call AgdaGoalType(v:count)<CR>
 nnoremap <buffer> <LocalLeader>r :<C-u>call AgdaRefine(v:false)<CR>
 nnoremap <buffer> <LocalLeader>R :<C-u>call AgdaRefine(v:true)<CR>
 nnoremap <buffer> <LocalLeader>g :<C-u>call AgdaGive(v:count)<CR>
@@ -319,7 +320,7 @@ nnoremap <buffer> <LocalLeader>n :<C-u>call AgdaComputeNormalisedMaybeToplevel(v
 nnoremap <buffer> <LocalLeader>o :<C-u>call AgdaModuleContentsMaybeToplevel(v:count)<CR>
 nnoremap <buffer> <LocalLeader>y :<C-u>call AgdaWhyInScope('')<CR>
 nnoremap <buffer> <LocalLeader>h :<C-u>call AgdaHelperFunctionType(v:count)<CR>
-nnoremap <buffer> <LocalLeader>d :<C-u>call AgdaGotoAnnotation()<CR>
+nnoremap <buffer> <LocalLeader>f :<C-u>call AgdaGotoAnnotation()<CR>
 nnoremap <buffer> <LocalLeader>m :<C-u>call AgdaShowGoals(v:count)<CR>
 nnoremap <buffer> <LocalLeader>z :<C-u>call AgdaSearchAbout(v:count)<CR>
 nnoremap <buffer> <LocalLeader>xh :<C-u>call AgdaDisplayImplicitArguments(v:count)<CR>
