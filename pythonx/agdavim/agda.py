@@ -36,6 +36,22 @@ class UsePrefixArgs(Enum):
 
 
 class HighlightCommand:
+    """
+    Represents a highlight annotation of the form:
+    (FROM TO ASPECTS [TOKEN-BASED] [INFO] [FILEPOS])
+
+    Notes:
+    - FROM and TO are 1-origin positions within the buffer.
+    - Positions are counted by bytes (not characters).
+
+    Args:
+        from_ (int): 1-origin start position in the buffer (byte-based).
+        to (int): 1-origin end position in the buffer (byte-based).
+        aspects (List[str]): List of aspect names associated with the annotation.
+        token_based (Optional[Union[bool, Nil]]): Optional token-based flag (True or nil).
+        info (Optional[Union[str, Nil]]): Optional information string or nil.
+        filepos (Optional[FilePosition]): Optional file position (1-origin, character-based).
+    """
     _from: int
     _to: int
     _aspects: List[str]
