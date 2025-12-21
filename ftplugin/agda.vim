@@ -280,6 +280,7 @@ command! -buffer -nargs=0 AgdaLoad call AgdaLoad(v:false)
 command! -buffer -nargs=0 AgdaShowVersion call AgdaShowVersion(v:false)
 command! -buffer -nargs=0 AgdaReload call s:AgdaSetMakePrg() | silent! make! | redraw!
 command! -buffer -nargs=0 AgdaShowRunningPath call AgdaShowRunningPath()
+command! -buffer -nargs=0 AgdaAutoMaybeAll call AgdaAutoMaybeAll(v:false)
 command! -buffer -nargs=? AgdaDisplayImplicitArguments call AgdaDisplayImplicitArguments(<f-args>)
 command! -buffer -nargs=0 AgdaToggleImplicitArguments call AgdaDisplayImplicitArguments(0)
 command! -buffer -nargs=0 AgdaShowImplicitArguments call AgdaDisplayImplicitArguments(1)
@@ -311,7 +312,7 @@ nnoremap <buffer> <LocalLeader>r :<C-u>call AgdaRefine(v:false)<CR>
 nnoremap <buffer> <LocalLeader>R :<C-u>call AgdaRefine(v:true)<CR>
 nnoremap <buffer> <LocalLeader>g :<C-u>call AgdaGive(v:count)<CR>
 nnoremap <buffer> <LocalLeader>c :<C-u>call AgdaMakeCase()<CR>
-nnoremap <buffer> <LocalLeader>a :<C-u>call AgdaAuto()<CR>
+nnoremap <buffer> <LocalLeader>a :<C-u>call AgdaAutoMaybeAll(v:false)<CR>
 nnoremap <buffer> <LocalLeader>e :<C-u>call AgdaShowContext(v:count)<CR>
 nnoremap <buffer> <LocalLeader>, :<C-u>call AgdaGoalAndContext(v:count)<CR>
 nnoremap <buffer> <LocalLeader>. :<C-u>call AgdaGoalAndContextAndInferred(v:count)<CR>

@@ -647,11 +647,11 @@ def AgdaRefine(pmlambda):
         sendCommand('Cmd_refine_or_intro %s %d noRange %s' % (pmlambda, result[1], escape(result[0])))
 
 
-@vim_func
-def AgdaAuto():
+@vim_func(conv={'quiet': vim_bool})
+def AgdaAutoMaybeAll(quiet):
     result = getHoleBodyAtCursor()
     if result is None:
-        print("No hole under the cursor")
+        sendCommand('Cmd_autoAll', highlight = False, quiet = quiet)
     elif result[1] is None:
         print("Goal not loaded")
     else:
