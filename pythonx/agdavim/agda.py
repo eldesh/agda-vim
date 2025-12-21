@@ -597,6 +597,11 @@ def AgdaGotoAnnotation():
 
 @vim_func(conv={'arg': vim_int_range(0,3)})
 def AgdaDisplayImplicitArguments(arg: int):
+    """Toggle display of implicit arguments.
+
+    Arguments:
+        arg: 0 to toggle display of implicit arguments, 1 to turn on, 2 to turn off.
+    """
     if arg == 0:
         return sendCommand('ToggleImplicitArgs', highlight = True)
     if arg == 1:
