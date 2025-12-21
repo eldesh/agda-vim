@@ -451,7 +451,7 @@ class HighlightAddAnnotationsResponse(Response):
         return [Symbol(self.tag), qq(remove)] + [qq(ann.to_sexpr()) for ann in self._annotations]
 
     @classmethod
-    def _remove_of(cls, expr) -> 'RemoveTokenBasedHighlighting':
+    def _remove_of(cls, expr) -> RemoveTokenBasedHighlighting:
         if expr == qq(Symbol('remove')):
             return RemoveTokenBasedHighlighting.RemoveHighlighting
         if expr == qq(sexpr.NIL):
@@ -464,7 +464,7 @@ class HighlightAddAnnotationsResponse(Response):
         if (isinstance(parsed, list)
             and 2 <= len(parsed)
             and parsed[0] == Symbol(cls.TAG)
-            and isinstance(parsed[1], list)
+            and sexpr.isqq(parsed[1])
             and all(sexpr.isqq(x) for x in parsed[2:])):
             remove = cls._remove_of(parsed[1])
             annotations = [HighlightAnnotation.parse(expr[1]) for expr in parsed[2:]]
