@@ -503,6 +503,9 @@ class GiveString:
     def __str__(self):
         return self.text
 
+    def to_sexpr(self):
+        return self.text
+
     @property
     def text(self) -> str:
         return self.text
@@ -514,11 +517,12 @@ class GiveParen:
         return sexpr.format(self.to_sexpr())
         
     def to_sexpr(self) -> sexpr.SExpr:
-        return qq('paren')
+        return qq(Symbol('paren'))
 
     @classmethod
     def parse(cls, ss: str) -> 'GiveParen':
-        if ss == '\'paren':
+        val = cls()
+        if sexpr.parse(ss) == val.to_sexpr():
             return cls()
         raise ParseError(ss, cls)
 
@@ -529,26 +533,27 @@ class GiveNoParen:
         return sexpr.format(self.to_sexpr())
 
     def to_sexpr(self) -> sexpr.SExpr:
-        return qq('no-paren')
+        return qq(Symbol('no-paren'))
 
     @classmethod
     def parse(cls, ss: str) -> 'GiveNoParen':
-        if ss == '\'no-paren':
-            return cls()
+        val = cls()
+        if sexpr.parse(ss) == val.to_sexpr():
+            return val
         raise ParseError(ss, cls)
 
 GiveResult = Union[GiveString, GiveParen, GiveNoParen]
 
-def give_result_from_str(ss: str) -> GiveResult:
-    try:
-        return GiveParen.parse(ss)
-    except ParseError:
-        pass
-    try:
-        return GiveNoParen.parse(ss)
-    except ParseError:
-        pass
-    return GiveString(ss)
+def give_result_from(expr: sexpr.SExpr) -> GiveResult:
+    if isinstance(expr, str):
+        return GiveString(expr)
+    # assert isqq(expr)
+    if GiveParen().to_sexpr() == expr:
+        return GiveParen()
+    if GiveNoParen().to_sexpr() == expr:
+        return GiveNoParen()
+    raise ParseError(expr, GiveResult)
+
 
 class GiveActionResponse(Response):
     TAG: ClassVar[str] = "agda2-give-action"
@@ -565,18 +570,19 @@ class GiveActionResponse(Response):
         return sexpr.format(self.to_sexpr())
 
     def to_sexpr(self) -> sexpr.SExpr:
-        return [Symbol(self.tag), self._interactionId._id, str(self._giveResult)]
+        return [Symbol(self.tag), self._interactionId._id, self._giveResult.to_sexpr()]
 
     @classmethod
     def parse(cls, ss) -> 'GiveActionResponse':
         parsed = sexpr.parse(ss)
+        print("GiveActionResponse.parse: %s" % parsed)
         if (isinstance(parsed, list)
             and len(parsed) == 3
             and parsed[0] == Symbol(cls.TAG)
             and isinstance(parsed[1], int)
-            and isinstance(parsed[2], str)):
+            and (isinstance(parsed[2], str) or sexpr.isqq(parsed[2]))):
             interactionId = InteractionId(parsed[1])
-            giveResult = give_result_from_str(parsed[2])
+            giveResult = give_result_from(parsed[2])
             return cls(interactionId, giveResult)
         raise ParseError(ss, cls)
 
