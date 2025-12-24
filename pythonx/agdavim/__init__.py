@@ -3,6 +3,7 @@ from . import agda_version
 from . import agda
 from . import protocol
 from . import response
+from . import command
 from . import log
 
 __all__ = [
@@ -11,5 +12,6 @@ __all__ = [
     'agda',
     'protocol',
     'response',
+    'command',
     'log'
 ]
