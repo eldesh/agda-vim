@@ -7,6 +7,7 @@ import logging
 
 from . import sexpr
 from .sexpr import Nil, Symbol, Pair, QUOTE, qq
+from .filepos import FilePosition, Origin1, UnitChar
 
 logger = logging.getLogger(__name__)
 
@@ -300,33 +301,6 @@ class RemoveTokenBasedHighlighting(IntEnum):
         raise ValueError("Invalid value for RemoveTokenBasedHighlighting: %s" % s)
 
 
-class FilePosition:
-    _file: str
-    _pos: int
-
-    def __init__(self, file: str, pos: int):
-        self._file = file
-        self._pos = pos
-
-    @property
-    def as_tuple(self) -> Tuple[str, int]:
-        return (self._file, self._pos)
-
-    @property
-    def file(self) -> str:
-        return self._file
-
-    @property
-    def pos(self) -> int:
-        return self._pos
-
-    def to_sexpr(self) -> Pair:
-        return Pair(self._file, self._pos)
-
-    def __str__(self):
-        return sexpr.format(self.to_sexpr())
-
-
 class HighlightAnnotation:
     """
     Represents a highlight annotation of the form:
@@ -349,12 +323,12 @@ class HighlightAnnotation:
     _aspects: List[str]
     _token_based: Optional[Union[bool, Nil]]
     _info: Optional[Union[str, Nil]]
-    _filepos: Optional[FilePosition]
+    _filepos: Optional[FilePosition[Origin1, UnitChar]]
 
     def __init__(self, from_: int, to: int, aspects: List[str],
                  token_based: Optional[Union[bool, Nil]] = None,
                  info: Optional[Union[str, Nil]] = None,
-                 filepos: Optional[FilePosition] = None):
+                 filepos: Optional[FilePosition[Origin1, UnitChar]] = None):
         self._from = from_
         self._to = to
         self._aspects = aspects
@@ -428,7 +402,7 @@ class HighlightAnnotation:
         return self._info
 
     @property
-    def filepos(self) -> Optional[FilePosition]:
+    def filepos(self) -> Optional[FilePosition[Origin1, UnitChar]]:
         return self._filepos
 
 
@@ -575,7 +549,6 @@ class GiveActionResponse(Response):
     @classmethod
     def parse(cls, ss) -> 'GiveActionResponse':
         parsed = sexpr.parse(ss)
-        print("GiveActionResponse.parse: %s" % parsed)
         if (isinstance(parsed, list)
             and len(parsed) == 3
             and parsed[0] == Symbol(cls.TAG)

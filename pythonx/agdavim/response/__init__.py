@@ -1,7 +1,9 @@
 from . import sexpr
+from . import filepos
 from .response import *
 __all__ = [
     "sexpr",
+    "filepos",
     "parse_response",
     "ParseError",
     "Response",
