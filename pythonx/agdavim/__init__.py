@@ -5,6 +5,7 @@ from . import agda
 from . import protocol
 from . import response
 from . import command
+from . import position
 from . import log
 
 __all__ = [
@@ -15,5 +16,6 @@ __all__ = [
     'protocol',
     'response',
     'command',
+    'position',
     'log'
 ]
