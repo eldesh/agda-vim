@@ -1,27 +1,55 @@
 import vim
 import re
 import logging
-from enum import Enum, auto, unique
-from sys import version_info
-from functools import wraps
-from itertools import chain
-from typing import Iterator, Tuple, List, Optional
+from typing import Iterator, List, Optional
 
 from .agda_path import escape, unescape, agda2_quote_list
 from .agda_process import AgdaProcess
 from .agda_version import AgdaVersion
 from .command import HighlightLevel, Remove as HighlightRemove, HighlightCommand
-from .protocol import ComputeMode, NormaliseType, NormaliseAsIsType
 from . import log
 from . import response
-from .response import FilePosition, InfoActionResponse, InfoActionAndCopyResponse, GoalsActionResponse, GiveActionResponse, MakeCaseActionResponse, MakeCaseActionExtendlamResponse, HighlightAddAnnotationsResponse, HighlightAnnotation, GiveString, RemoveTokenBasedHighlighting
+from .response import FilePosition, InfoActionResponse, InfoActionAndCopyResponse, GoalsActionResponse, GiveActionResponse, MakeCaseActionResponse, MakeCaseActionExtendlamResponse, HighlightAddAnnotationsResponse, GiveString, RemoveTokenBasedHighlighting
 from .response import sexpr
-
-python_cmd = 'py' if version_info.major == 2 else 'py3'
+from .vimfunc import vim_func, vim_bool, vim_int_range, vim_normalise, vim_compute_mode, vim_normalise_asis
 
 logger = logging.getLogger(__name__)
 
 AGDA2_OUTPUT_PROMPT: str = "Agda2> "
+
+
+class PropertyId:
+    """ Unique identifier for highlight properties. """
+    _ctx: int
+
+    def __init__(self) -> None:
+        self._ctx = 0
+
+    def __str__(self) -> str:
+        return '%s' % self._ctx
+
+    def __repr__(self) -> str:
+        return 'PropertyId(%s)' % self._ctx
+
+    def __eq__(self, other) -> bool:
+        return self._ctx == other._ctx
+
+    def __cmp__(self, other) -> int:
+        return self._ctx - other._ctx
+
+    def next(self) -> 'PropertyId':
+        self._ctx += 1
+        return PropertyId(self._ctx)
+
+
+# start Agda
+# TODO: I'm pretty sure this will start an agda process per buffer which is less than desirable...
+agda = None
+
+goals = {}
+
+annotations = []
+
 
 
 def highlight_cmds_from_response(resp: HighlightAddAnnotationsResponse) -> Iterator[HighlightCommand]:
@@ -31,101 +59,6 @@ def highlight_cmds_from_response(resp: HighlightAddAnnotationsResponse) -> Itera
                                 ann.token_based is True,
                                 None if ann.info is sexpr.NIL else ann.info,
                                 filepos_opt)
-
-
-def vim_func(vim_fname_or_func=None, conv=None):
-    '''Expose a python function to vim, optionally overriding its name.'''
-
-    def wrap_func(func, vim_fname, conv):
-        module = func.__module__
-        fname = func.__name__
-        vim_fname = vim_fname or fname
-        arg_names = func.__code__.co_varnames[:func.__code__.co_argcount]
-        arg_defaults = list(zip(arg_names[-len(func.__defaults__ or ()):], func.__defaults__ or []))
-        defaults_len = len(func.__defaults__ or ())
-
-        @wraps(func)
-        def from_vim(vim_arg_dict):
-            '''Convert vim arguments to python and call the function.'''
-            logger.debug("vim_arg_dict: %s" % vim_arg_dict)
-            args = {}
-            # Handle non-defaulted arguments.
-            for k in arg_names[:-defaults_len]:
-                val = vim_arg_dict[k]
-                if k in conv:
-                    val = conv[k](val)
-                args[k] = val
-            # Handle defaulted arguments.
-            for i, k in enumerate(arg_names[-defaults_len:]):
-                try:
-                    val = vim_arg_dict[k]
-                except KeyError:
-                    _key, val = arg_defaults[i]
-                if k in conv:
-                    val = conv[k](val)
-                args[k] = val
-            return func(**args)
-
-        func.from_vim = from_vim
-
-        vim_params = chain(arg_names[0:len(arg_names) - defaults_len], ['...'] if defaults_len > 0 else [])
-        vimfunc_def = '''
-            function! {vim_fname}({vim_signature})
-                {python_cmd} {module}.{fname}.from_vim(vim.eval(\'a:\'))
-            endfunction
-        '''.format(
-            python_cmd=python_cmd,
-            vim_fname=vim_fname,
-            vim_signature=', '.join(vim_params),
-            fname=fname,
-            module=module
-        )
-        #print("vimfunc_def: %s" % vimfunc_def)
-        vim.command(vimfunc_def)
-        return func
-
-    if callable(vim_fname_or_func):
-        return wrap_func(func=vim_fname_or_func, vim_fname=None, conv={})
-
-    def wrapper(func):
-        return wrap_func(func=func, vim_fname=vim_fname_or_func, conv=conv or {})
-    return wrapper
-
-
-def vim_bool(s):
-    if isinstance(s, bool):
-        return s
-    if s == 'False':
-        return False
-    if s == 'True':
-        return True
-    raise ValueError("Cannot convert %s to bool" % s)
-
-def vim_int_range(start, stop, step = 1):
-    r = range(start, stop, step)
-    def inner(s):
-        val = int(s)
-        if val in r:
-            return val
-        raise ValueError("Value %s is not in range %s" % (val, r))
-    return inner
-
-def vim_compute_mode(s):
-    return ComputeMode.from_int(int(s))
-
-def vim_normalise(s):
-    return NormaliseType.from_int(int(s))
-
-def vim_normalise_asis(s):
-    return NormaliseAsIsType.from_int(int(s))
-
-# start Agda
-# TODO: I'm pretty sure this will start an agda process per buffer which is less than desirable...
-agda = None
-
-goals = {}
-annotations = []
-
 
 def promptUser(msg):
     vim.command('call inputsave()')

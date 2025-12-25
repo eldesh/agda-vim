@@ -7,6 +7,7 @@ from . import response
 from . import command
 from . import position
 from . import log
+from . import vimfunc
 
 __all__ = [
     'agda_path',
@@ -17,5 +18,6 @@ __all__ = [
     'response',
     'command',
     'position',
-    'log'
+    'log',
+    'vimfunc'
 ]

@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 
-from . import response
 from .response import sexpr
 from .response.sexpr import Symbol
 from .agda_path import escape
