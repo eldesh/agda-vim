@@ -54,11 +54,11 @@ annotations = []
 
 def highlight_cmds_from_response(resp: HighlightAddAnnotationsResponse) -> Iterator[HighlightCommand]:
     for ann in resp.annotations:
-        filepos_opt = FilePosition(ann.filepos.file, c2b(ann.filepos.pos-1)) if ann.filepos is not None else None
-        yield HighlightCommand(c2b(ann.from_-1), c2b(ann.to-1), ann.aspects,
+        yield HighlightCommand(c2b(ann.from_), c2b(ann.to), ann.aspects,
                                 ann.token_based is True,
                                 None if ann.info is sexpr.NIL else ann.info,
-                                filepos_opt)
+                                ann.filepos)
+
 
 def promptUser(msg):
     vim.command('call inputsave()')
