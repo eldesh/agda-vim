@@ -1,6 +1,6 @@
 import vim
 import logging
-
+from typing import Callable, Union
 from sys import version_info
 from functools import wraps
 from itertools import chain
@@ -72,7 +72,7 @@ def vim_func(vim_fname_or_func=None, conv=None):
     return wrapper
 
 
-def vim_bool(s):
+def vim_bool(s: Union[bool, str]) -> bool:
     if isinstance(s, bool):
         return s
     if s == 'False':
@@ -81,21 +81,21 @@ def vim_bool(s):
         return True
     raise ValueError("Cannot convert %s to bool" % s)
 
-def vim_int_range(start, stop, step = 1):
+def vim_int_range(start: int, stop: int, step: int = 1) -> Callable[[Union[int, str]], int]:
     r = range(start, stop, step)
-    def inner(s):
+    def inner(s: Union[int, str]) -> int:
         val = int(s)
         if val in r:
             return val
         raise ValueError("Value %s is not in range %s" % (val, r))
     return inner
 
-def vim_compute_mode(s):
+def vim_compute_mode(s: Union[int, str]) -> ComputeMode:
     return ComputeMode.from_int(int(s))
 
-def vim_normalise(s):
+def vim_normalise(s: Union[int, str]) -> NormaliseType:
     return NormaliseType.from_int(int(s))
 
-def vim_normalise_asis(s):
+def vim_normalise_asis(s: Union[int, str]) -> NormaliseAsIsType:
     return NormaliseAsIsType.from_int(int(s))
 
