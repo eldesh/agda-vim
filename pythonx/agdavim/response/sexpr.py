@@ -3,7 +3,7 @@ from typing import Iterator, List, Union
 import logging
 from dataclasses import dataclass
 
-from .token import Token, TokenKind, tokenize
+from .token import Token, TokenString, TokenAtom, TokenSymbol, TokenKind, tokenize
 
 @dataclass(order=True, frozen=True, slots=True)
 class Nil:
@@ -59,9 +59,9 @@ def _parse_list(tokens: Iterator[Token]) -> Iterator[SExpr]:
                 yield Pair(lst[0], lst[2])
             else:
                 raise ValueError("Invalid dotted pair syntax: %s" % lst)
-        elif tok.kind == TokenKind.STRING:
+        elif isinstance(tok, TokenString):
             yield tok.value
-        elif tok.kind == TokenKind.ATOM:
+        elif isinstance(tok, TokenAtom):
             yield _convert_atom(tok.value)
         elif tok.kind == TokenKind.DOT:
             yield DOT
@@ -70,15 +70,15 @@ def _parse_list(tokens: Iterator[Token]) -> Iterator[SExpr]:
             if next_tok.kind == TokenKind.LPAREN:
                 qexpr = list(_parse_list(tokens))
                 if not DOT in qexpr:
-                    yield [QUOTE, qexpr]
+                    yield qq(qexpr)
                 elif len(qexpr) == 3 and qexpr[0] != DOT and qexpr[1] == DOT and qexpr[2] != DOT:
-                    yield [QUOTE, Pair(qexpr[0], qexpr[2])]
+                    yield qq(Pair(qexpr[0], qexpr[2]))
                 else:
                     raise ValueError("Invalid dotted pair syntax: %s" % qexpr)
-            elif next_tok.kind == TokenKind.STRING:
-                yield [QUOTE, next_tok.value]
-            elif next_tok.kind == TokenKind.ATOM:
-                yield [QUOTE, _convert_atom(next_tok.value)]
+            elif isinstance(next_tok, TokenString):
+                yield qq(next_tok.value)
+            elif isinstance(next_tok, TokenAtom):
+                yield qq(_convert_atom(next_tok.value))
             else:
                 raise ValueError("Unexpected token after quote: %s" % next_tok)
         else:
