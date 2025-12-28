@@ -1,5 +1,6 @@
 from enum import IntEnum, unique
-from typing import Iterator, Optional
+from typing import Iterator, Union, Literal, List
+from dataclasses import dataclass
 import logging
 
 logger = logging.getLogger(__name__)
@@ -14,29 +15,67 @@ class TokenKind(IntEnum):
     DOT = 5
 
 
-class Token:
-    _kind: TokenKind
-    _value: Optional[str]
-    def __init__(self, kind: TokenKind, value: Optional[str] = None):
-        self._kind = kind
-        self._value = value
+@dataclass(eq=True, order=True, frozen=True)
+class TokenSymbol:
+    _kind: Literal[TokenKind.LPAREN, TokenKind.RPAREN, TokenKind.QUOTE, TokenKind.DOT]
+    _value: None
 
     @property
     def kind(self) -> TokenKind:
         return self._kind
-    
+
     @property
-    def value(self) -> Optional[str]:
+    def value(self) -> None:
         return self._value
 
     def __repr__(self):
         return f"Token(%r, %r)" % (self._kind, self._value)
 
     def __str__(self):
-        if self._value is None:
-            return f"Token(%s)" % self._kind.name
-        else:
-            return f"Token(%s, %s)" % (self._kind.name, self._value)
+        return f"'%s'" % self._kind.name
+
+
+@dataclass(eq=True, order=True, frozen=True)
+class TokenString:
+    _kind: Literal[TokenKind.STRING]
+    _value: str
+
+    @property
+    def kind(self) -> TokenKind:
+        return self._kind
+    
+    @property
+    def value(self) -> str:
+        return self._value
+
+    def __repr__(self):
+        return f"Token(%r, %r)" % (self._kind, self._value)
+
+    def __str__(self):
+        return f"Token(%s, %s)" % (self._kind.name, self._value)
+
+
+@dataclass(eq=True, order=True, frozen=True)
+class TokenAtom:
+    _kind: Literal[TokenKind.ATOM]
+    _value: str
+
+    @property
+    def kind(self) -> TokenKind:
+        return self._kind
+
+    @property
+    def value(self) -> str:
+        return self._value
+
+    def __repr__(self):
+        return f"Token(%r, %r)" % (self._kind, self._value)
+
+    def __str__(self):
+        return f"Token(%s, %s)" % (self._kind.name, self._value)
+
+
+Token = Union[TokenSymbol, TokenString, TokenAtom]
 
 
 def tokenize(s: str) -> Iterator[Token]:
@@ -52,25 +91,25 @@ def tokenize(s: str) -> Iterator[Token]:
                 i += 1
             continue
         if c == '(':
-            yield Token(TokenKind.LPAREN)
+            yield TokenSymbol(TokenKind.LPAREN, None)
             i += 1
             continue
         if c == ')':
-            yield Token(TokenKind.RPAREN)
+            yield TokenSymbol(TokenKind.RPAREN, None)
             i += 1
             continue
         if c == '\'':
-            yield Token(TokenKind.QUOTE)
+            yield TokenSymbol(TokenKind.QUOTE, None)
             i += 1
             continue
         if c == '.':
-            yield Token(TokenKind.DOT)
+            yield TokenSymbol(TokenKind.DOT, None)
             i += 1
             continue
         if c == '"':
             # Parse string literal with escapes
             i += 1
-            buf = []
+            buf: List[str] = []
             while i < n:
                 ch = s[i]
                 if ch == '\\':
@@ -102,12 +141,12 @@ def tokenize(s: str) -> Iterator[Token]:
                 logger.debug("break while: s[%d]:%s" % (i, ''.join(buf)))
                 raise ValueError("Unterminated string literal")
 
-            yield Token(TokenKind.STRING, ''.join(buf))
+            yield TokenString(TokenKind.STRING, ''.join(buf))
         else:
             # Parse atom: until whitespace or paren
             start = i
             while i < n and (not s[i].isspace()) and s[i] not in ')':
                 i += 1
             atom = s[start:i]
-            yield Token(TokenKind.ATOM, atom)
+            yield TokenAtom(TokenKind.ATOM, atom)
 
