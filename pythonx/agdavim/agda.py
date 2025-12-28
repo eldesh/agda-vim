@@ -12,35 +12,12 @@ from . import response
 from .response import FilePosition, InfoActionResponse, InfoActionAndCopyResponse, GoalsActionResponse, GiveActionResponse, MakeCaseActionResponse, MakeCaseActionExtendlamResponse, HighlightAddAnnotationsResponse, GiveString, RemoveTokenBasedHighlighting
 from .response import sexpr
 from .vimfunc import vim_func, vim_bool, vim_int_range, vim_normalise, vim_compute_mode, vim_normalise_asis
+from .property import AgdaProperty, PropertyId, PropertyKey
+
 
 logger = logging.getLogger(__name__)
 
 AGDA2_OUTPUT_PROMPT: str = "Agda2> "
-
-
-class PropertyId:
-    """ Unique identifier for highlight properties. """
-    _ctx: int
-
-    def __init__(self) -> None:
-        self._ctx = 0
-
-    def __str__(self) -> str:
-        return '%s' % self._ctx
-
-    def __repr__(self) -> str:
-        return 'PropertyId(%s)' % self._ctx
-
-    def __eq__(self, other) -> bool:
-        return self._ctx == other._ctx
-
-    def __cmp__(self, other) -> int:
-        return self._ctx - other._ctx
-
-    def next(self) -> 'PropertyId':
-        self._ctx += 1
-        return PropertyId(self._ctx)
-
 
 # start Agda
 # TODO: I'm pretty sure this will start an agda process per buffer which is less than desirable...
@@ -50,7 +27,15 @@ goals = {}
 
 annotations = []
 
+id_property_map: MutableMapping[PropertyId, AgdaProperty] = {}
 
+property_id_ctx: PropertyId = PropertyId(0)
+
+
+def gen_property_id() -> PropertyId:
+    global property_id_ctx
+    property_id_ctx += 1
+    return property_id_ctx
 
 def highlight_cmds_from_response(resp: HighlightAddAnnotationsResponse) -> Iterator[HighlightCommand]:
     for ann in resp.annotations:

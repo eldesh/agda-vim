@@ -6,6 +6,7 @@ from . import protocol
 from . import response
 from . import command
 from . import position
+from . import property
 from . import log
 from . import vimfunc
 
@@ -18,6 +19,7 @@ __all__ = [
     'response',
     'command',
     'position',
+    'property',
     'log',
     'vimfunc'
 ]
