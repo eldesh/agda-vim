@@ -5,28 +5,24 @@ from dataclasses import dataclass
 
 from .token import Token, TokenKind, tokenize
 
+@dataclass(order=True, frozen=True, slots=True)
 class Nil:
     """
     Represents the nil atom in S-expressions
     """
-    __slots__ = ()
 
-    def __repr__(self):
-        return "nil"
-    
     def __str__(self):
         return "nil"
     
-    def __eq__(self, other: 'Nil'):
-        return isinstance(other, Nil)
 
-@dataclass(frozen=True, slots=True)
+@dataclass(order=True, frozen=True, slots=True)
 class Symbol:
     name: str
+
     def __str__(self):
         return self.name
 
-@dataclass(frozen=True)
+@dataclass(order=True, frozen=True, slots=True)
 class Pair:
     car: "SExpr"
     cdr: "SExpr"
