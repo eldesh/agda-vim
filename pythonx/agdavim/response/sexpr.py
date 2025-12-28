@@ -1,6 +1,5 @@
 from __future__ import annotations
-from enum import IntEnum, unique
-from typing import Any, Iterator, List, Union, Optional, Type
+from typing import Iterator, List, Union
 import logging
 from dataclasses import dataclass
 
@@ -35,8 +34,8 @@ class Pair:
     def __str__(self):
         return format([self.car, Symbol('.'), self.cdr])
 
-SAtom: Type = Union[Symbol, str, int, float, bool, Nil]
-SExpr: Type = Union[SAtom, List["SExpr"], Pair]
+SAtom = Union[Symbol, str, int, float, bool, Nil]
+SExpr = Union[SAtom, List["SExpr"], Pair]
 
 logger = logging.getLogger(__name__)
 
