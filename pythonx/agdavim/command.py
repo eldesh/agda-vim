@@ -1,5 +1,7 @@
+from __future__ import annotations
 from enum import Enum, auto, unique
 from typing import List, Optional
+from dataclasses import dataclass
 import logging
 
 from .response.filepos import FilePosition, Origin1, UnitChar
@@ -19,6 +21,7 @@ class UsePrefixArgs(Enum):
             return "WithoutForce"
 
 
+@dataclass
 class HighlightCommand:
     """
     Represents a highlight annotation of the form:
@@ -42,17 +45,6 @@ class HighlightCommand:
     _token_based: bool
     _info: Optional[str]
     _filepos: Optional[FilePosition[Origin1, UnitChar]]
-
-    def __init__(self, from_: int, to: int, aspects: List[str],
-                 token_based: bool,
-                 info: Optional[str],
-                 filepos: Optional[FilePosition[Origin1, UnitChar]]):
-        self._from = from_
-        self._to = to
-        self._aspects = aspects
-        self._token_based = token_based
-        self._info = info
-        self._filepos = filepos
 
     def __str__(self):
         aspects = '(' + ' '.join(self._aspects) + ')'
@@ -104,7 +96,8 @@ class Remove(Enum):
             return "Keep"
         raise ValueError("Unknown Remove: %s" % self)
 
-    def parse(s: str) -> 'Remove':
+    @staticmethod
+    def parse(s: str) -> Remove:
         if s == "Remove":
             return Remove.REMOVE
         if s == "Keep":
@@ -127,7 +120,8 @@ class HighlightLevel(Enum):
             return "Interactive"
         raise ValueError("Unknown HighlightLevel: %s" % self)
 
-    def parse(s: str) -> 'HighlightLevel':
+    @staticmethod
+    def parse(s: str) -> HighlightLevel:
         if s == "None":
             return HighlightLevel.NONE
         if s == "NonInteractive":
