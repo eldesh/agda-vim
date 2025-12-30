@@ -14,7 +14,7 @@ from .response import FilePosition, InfoActionResponse, InfoActionAndCopyRespons
 from .response import sexpr
 from .vimfunc import vim_func, vim_bool, vim_int_range, vim_normalise, vim_compute_mode, vim_normalise_asis
 from .property import AgdaProperty, PropertyId, PropertyKey
-from .vimapi import prop_add, prop_remove, prop_find
+from .vimapi import prop_add, prop_remove, prop_list
 from . import vimapi
 from .response.filepos import OBPoint
 
@@ -74,13 +74,13 @@ annotations = []
 
 id_property_map: MutableMapping[PropertyId, AgdaProperty] = {}
 
-property_id_ctx: PropertyId = PropertyId(0)
+property_id_ctx: int = 0
 
 
 def gen_property_id() -> PropertyId:
     global property_id_ctx
     property_id_ctx += 1
-    return property_id_ctx
+    return PropertyId(property_id_ctx)
 
 
 def highlight_cmds_from_response(resp: HighlightAddAnnotationsResponse) -> Iterator[HighlightCommand]:
@@ -127,12 +127,10 @@ def forget_all_goal_properties():
     global id_property_map
 
     agda_goal_set.clear()
-    while True:
-        prop = prop_find({ 'type': 'agdavim:agdaHole' })
-        if prop == {}:
-            break
-        id = int(prop["id"])
-        del id_property_map[PropertyId(id)]
+    for lnum in range(1, len(vim.current.buffer)+1):
+        for prop in prop_list(lnum, { 'types': ['agdavim:agdaHole'] }):
+            logger.debug("delete: prop: %s" % prop)
+            del id_property_map[PropertyId(int(prop["id"]))]
 
     prop_remove({ 'type': 'agdavim:agdaHole', 'all': True })
     prop_remove({ 'type': 'agdavim:agdaHoleNumber', 'all': True })
@@ -153,7 +151,7 @@ def goal_action(goalList: List[int]):
             prop_id = gen_property_id()
             length = goal.pos_end.col - goal.pos_start.col
             prop = AgdaProperty({ PropertyKey.GOAL_NUMBER: goal.num, PropertyKey.VIRTUAL_TXT: "%s" % goal.num })
-            prop_add(pos.row, pos.col       , {'type': 'agdavim:agdaHole', 'id': str(prop_id), 'length': length})
+            prop_add(pos.row, pos.col       , {'type': 'agdavim:agdaHole', 'id': prop_id.get(), 'length': length})
             prop_add(pos.row, pos.col+length, {'type': 'agdavim:agdaHoleNumber', 'text': prop[PropertyKey.VIRTUAL_TXT] })
             id_property_map[prop_id] = prop
         else:

@@ -1,9 +1,9 @@
 from __future__ import annotations
-from typing import Any, Callable, Union, overload, Optional
+from typing import Any, Callable, Union, overload, Optional, List
 
 import vim
 
-GroundType = Union[None, bool, int, float, str]
+GroundType = Union[None, bool, int, float, str, List['GroundType']]
 
 
 def bindeval(expr: str) -> Any:
@@ -33,6 +33,8 @@ prop_add_: Callable[[int, int, dict[str, GroundType]], int] = Function("prop_add
 
 prop_find_: Callable[[dict[str, GroundType]], dict[str, GroundType]] = Function("prop_find")
 
+prop_list_: Callable[[int, dict[str, GroundType]], List[dict[str, GroundType]]] = Function("prop_list")
+
 @overload
 def prop_remove_(props: dict[str, GroundType]) -> int:
     pass
@@ -59,6 +61,9 @@ def prop_add(line: int, col: int, prop: dict[str, GroundType]) -> int:
 
 def prop_find(prop: dict[str, GroundType]) -> dict[str, GroundType]:
     return prop_find_(prop)
+
+def prop_list(lnum: int, prop: dict[str, GroundType]) -> List[dict[str, GroundType]]:
+    return prop_list_(lnum, prop)
 
 def prop_remove(props: dict[str, GroundType], lnum: Optional[int] = None, lnumend: Optional[int] = None) -> int:
     if lnum is None:

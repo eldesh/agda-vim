@@ -1,6 +1,8 @@
 from dataclasses import dataclass
-from typing import Mapping, Union
+from typing import Any, Mapping, Union
 from enum import Enum, auto, unique
+
+from .vimapi import GroundType
 
 
 @dataclass(order=True, frozen=True, slots=True)
@@ -8,7 +10,7 @@ class PropertyId:
     """ Unique identifier for highlight properties. """
     _val: int
 
-    def as_int(self) -> int:
+    def get(self) -> int:
         return self._val
 
     def __str__(self) -> str:
@@ -27,7 +29,7 @@ class PropertyKey(Enum):
     VIRTUAL_TXT = auto()
 
 
-PropertyValue = Union[str, int]
+PropertyValue = GroundType
 
 
 @dataclass(eq=True, order=True, slots=True)
@@ -45,4 +47,7 @@ class AgdaProperty:
 
     def __items__(self):
         return self._prop.items()
+
+    def __str__(self) -> str:
+        return str(self._prop)
 
