@@ -13,6 +13,8 @@ from .response import FilePosition, InfoActionResponse, InfoActionAndCopyRespons
 from .response import sexpr
 from .vimfunc import vim_func, vim_bool, vim_int_range, vim_normalise, vim_compute_mode, vim_normalise_asis
 from .property import AgdaProperty, PropertyId, PropertyKey
+from .vimapi import prop_add, prop_remove
+import vimapi
 
 
 logger = logging.getLogger(__name__)

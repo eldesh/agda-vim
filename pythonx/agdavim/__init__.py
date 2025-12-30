@@ -8,6 +8,7 @@ from . import command
 from . import position
 from . import property
 from . import log
+from . import vimapi
 from . import vimfunc
 
 __all__ = [
@@ -21,5 +22,6 @@ __all__ = [
     'position',
     'property',
     'log',
+    'vimapi',
     'vimfunc'
 ]
