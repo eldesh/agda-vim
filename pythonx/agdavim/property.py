@@ -3,10 +3,13 @@ from typing import Mapping, Union
 from enum import Enum, auto, unique
 
 
-@dataclass(eq=True, order=True, frozen=True, slots=True)
+@dataclass(order=True, frozen=True, slots=True)
 class PropertyId:
     """ Unique identifier for highlight properties. """
     _val: int
+
+    def as_int(self) -> int:
+        return self._val
 
     def __str__(self) -> str:
         return '%s' % self._val

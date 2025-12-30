@@ -31,6 +31,7 @@ def eval(expr: str) -> Any:
 
 prop_add_: Callable[[int, int, dict[str, GroundType]], int] = Function("prop_add")
 
+prop_find_: Callable[[dict[str, GroundType]], dict[str, GroundType]] = Function("prop_find")
 
 @overload
 def prop_remove_(props: dict[str, GroundType]) -> int:
@@ -56,6 +57,8 @@ def prop_remove_(props: dict[str, GroundType], lnum: Optional[int] = None, lnume
 def prop_add(line: int, col: int, prop: dict[str, GroundType]) -> int:
     return prop_add_(line, col, prop)
 
+def prop_find(prop: dict[str, GroundType]) -> dict[str, GroundType]:
+    return prop_find_(prop)
 
 def prop_remove(props: dict[str, GroundType], lnum: Optional[int] = None, lnumend: Optional[int] = None) -> int:
     if lnum is None:

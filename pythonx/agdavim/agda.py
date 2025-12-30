@@ -14,7 +14,7 @@ from .response import FilePosition, InfoActionResponse, InfoActionAndCopyRespons
 from .response import sexpr
 from .vimfunc import vim_func, vim_bool, vim_int_range, vim_normalise, vim_compute_mode, vim_normalise_asis
 from .property import AgdaProperty, PropertyId, PropertyKey
-from .vimapi import prop_add, prop_remove
+from .vimapi import prop_add, prop_remove, prop_find
 from . import vimapi
 from .response.filepos import OBPoint
 
@@ -124,7 +124,16 @@ def find_goals_from_current_buffer(goals: List[int]) -> Iterator[Goal]:
 
 def forget_all_goal_properties():
     global agda_goal_set
+    global id_property_map
+
     agda_goal_set.clear()
+    while True:
+        prop = prop_find({ 'type': 'agdavim:agdaHole' })
+        if prop == {}:
+            break
+        id = int(prop["id"])
+        del id_property_map[PropertyId(id)]
+
     prop_remove({ 'type': 'agdavim:agdaHole', 'all': True })
     prop_remove({ 'type': 'agdavim:agdaHoleNumber', 'all': True })
 
