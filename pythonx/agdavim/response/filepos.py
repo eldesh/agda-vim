@@ -114,3 +114,42 @@ class FilePoint(Generic[O, U]):
     def col(self) -> int:
         return self._point.col
 
+
+class ZCPoint(Point[Origin0, UnitChar]):
+    ORIGIN = 0
+
+class OCPoint(Point[Origin1, UnitChar]):
+    ORIGIN = 1
+
+class ZBPoint(Point[Origin0, UnitByte]):
+    ORIGIN = 0
+
+class OBPoint(Point[Origin1, UnitByte]):
+    ORIGIN = 1
+
+
+class ZCFilePos(FilePosition[Origin0, UnitChar]):
+    ORIGIN = 0
+
+class OCFilePos(FilePosition[Origin1, UnitChar]):
+    ORIGIN = 1
+
+class ZBFilePos(FilePosition[Origin0, UnitByte]):
+    ORIGIN = 0
+
+class OBFilePos(FilePosition[Origin1, UnitByte]):
+    ORIGIN = 1
+
+
+class ZCFilePoint(FilePoint[Origin0, UnitChar]):
+    ORIGIN = 0
+
+class OCFilePoint(FilePoint[Origin1, UnitChar]):
+    ORIGIN = 1
+
+class ZBFilePoint(FilePoint[Origin0, UnitByte]):
+    ORIGIN = 0
+
+class OBFilePoint(FilePoint[Origin1, UnitByte]):
+    ORIGIN = 1
+
