@@ -25,15 +25,50 @@ O = TypeVar('O', Origin0, Origin1)
 U = TypeVar('U', UnitByte, UnitChar)
 
 
-@dataclass(eq=True, order=True, frozen=True, slots=True)
+@dataclass(order=True, frozen=True, slots=True)
+class Point(Generic[O, U]):
+    """Represents a point in a buffer with row and column."""
+
+    ORIGIN: ClassVar[int]
+    _row: int
+    _col: int
+
+    @property
+    def row(self) -> int:
+        return self._row
+
+    @property
+    def col(self) -> int:
+        return self._col
+
+    def __str__(self) -> str:
+        return "(%d, %d)" % (self.row, self.col)
+
+    def to_zero_origin(self) -> Point[Origin0, U]:
+        if self.ORIGIN == 0:
+            return self  # type: ignore[return-value]
+        else:
+            return Point[Origin0, U](self.row - 1, self.col - 1)
+
+    def to_one_origin(self) -> Point[Origin1, U]:
+        if self.ORIGIN == 1:
+            return self  # type: ignore[return-value]
+        else:
+            return Point[Origin1, U](self.row + 1, self.col + 1)
+
+
+@dataclass(order=True, frozen=True, slots=True)
 class FilePosition(Generic[O, U]):
+    """Represents the offset within a file.
+
+    Type parameters:
+    - O indicates the origin of the offset (e.g., Origin0 or Origin1).
+    - U indicates the unit of the offset (e.g., UnitByte or UnitChar).
+    """
+
     ORIGIN: ClassVar[int]
     _file: str
     _pos: int
-
-    @property
-    def as_tuple(self) -> Tuple[str, int]:
-        return (self._file, self._pos)
 
     @property
     def file(self) -> str:
@@ -50,22 +85,32 @@ class FilePosition(Generic[O, U]):
         return sexpr.format(self.to_sexpr())
 
 
-@dataclass(eq=True, order=True, frozen=True, slots=True)
-class LineCol(Generic[O, U]):
+@dataclass(order=True, frozen=True, slots=True)
+class FilePoint(Generic[O, U]):
+    """Represents the point within a file.
+
+    Type parameters:
+    - O indicates the origin of the offset (e.g., Origin0 or Origin1).
+    - U indicates the unit of the offset (e.g., UnitByte or UnitChar).
+    """
+
     ORIGIN: ClassVar[int]
     _file: str
-    _line: int
-    _col: int
-    
+    _point: Point[O, U]
+
     @property
     def file(self) -> str:
         return self._file
 
     @property
-    def line(self) -> int:
-        return self._line
+    def point(self) -> Point[O, U]:
+        return self._point
+
+    @property
+    def row(self) -> int:
+        return self._point.row
 
     @property
     def col(self) -> int:
-        return self._col
+        return self._point.col
 
