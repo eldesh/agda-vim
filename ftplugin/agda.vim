@@ -71,6 +71,15 @@ if empty(prop_type_get('agdavim:meta'))
   call prop_type_add('agdavim:meta', {'highlight': 'agdaXXX', 'combine': 1, 'priority': 200, 'override': v:true})
 endif
 
+if empty(prop_type_get('agdavim:agdaHole'))
+  call prop_type_add('agdavim:agdaHole', {'highlight': 'agdaHole', 'combine': 1, 'priority': 200, 'override': v:true})
+endif
+
+highlight MyHL ctermbg=Green ctermfg=Black guibg=Green guifg=Black
+if empty(prop_type_get('agdavim:agdaHoleNumber'))
+  call prop_type_add('agdavim:agdaHoleNumber', {'highlight': 'MyHL', 'combine': 1, 'priority': 200, 'override': v:true})
+endif
+
 let g:agdavim_enable_goto_definition = get(g:, 'agdavim_enable_goto_definition', v:true) ? v:true : v:false
 
 setlocal errorformat=\ \ /%\\&%f:%l\\,%c-%.%#,%E/%\\&%f:%l\\,%c-%.%#,%Z,%C%m,%-G%.%#

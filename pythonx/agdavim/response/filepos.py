@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Generic, TypeVar, Tuple, ClassVar
+from typing import Generic, TypeVar, ClassVar
 
 from .sexpr import Pair
 from . import sexpr

@@ -1,7 +1,8 @@
 import vim
 import re
 import logging
-from typing import Iterator, List, Optional
+from typing import Iterator, List, Optional, MutableMapping, Tuple
+from dataclasses import dataclass
 
 from .agda_path import escape, unescape, agda2_quote_list
 from .agda_process import AgdaProcess
@@ -14,18 +15,60 @@ from .response import sexpr
 from .vimfunc import vim_func, vim_bool, vim_int_range, vim_normalise, vim_compute_mode, vim_normalise_asis
 from .property import AgdaProperty, PropertyId, PropertyKey
 from .vimapi import prop_add, prop_remove
-import vimapi
+from . import vimapi
+from .response.filepos import OBPoint
 
 
 logger = logging.getLogger(__name__)
 
 AGDA2_OUTPUT_PROMPT: str = "Agda2> "
 
+
+@dataclass(order=True, frozen=True, slots=True)
+class Goal:
+    """ Represents a goal in the buffer.
+
+    _buf: (int) Buffer number.
+    _num: (int) Goal number.
+    _pos: (Point) Position of the goal in the buffer. (1-origin, byte unit)
+    """
+
+    _buf: int
+    _num: int
+    _contents: str
+    _pos_start: OBPoint
+    _pos_end: OBPoint # _pos_start <= _pos_end
+
+    @property
+    def buf(self) -> int:
+        return self._buf
+
+    @property
+    def num(self) -> int:
+        return self._num
+
+    @property
+    def contents(self) -> str:
+        return self._contents
+
+    @property
+    def pos_start(self) -> OBPoint:
+        return self._pos_start
+
+    @property
+    def pos_end(self) -> OBPoint:
+        return self._pos_end
+
+    def __str__(self) -> str:
+        return "Goal(buf[%d]: %s@%d, %s..%s)" % (self.buf, self.contents, self.num, self.pos_start, self.pos_end)
+
+
+
 # start Agda
 # TODO: I'm pretty sure this will start an agda process per buffer which is less than desirable...
 agda = None
 
-goals = {}
+agda_goal_set: set[Goal] = set([])
 
 annotations = []
 
@@ -38,6 +81,7 @@ def gen_property_id() -> PropertyId:
     global property_id_ctx
     property_id_ctx += 1
     return property_id_ctx
+
 
 def highlight_cmds_from_response(resp: HighlightAddAnnotationsResponse) -> Iterator[HighlightCommand]:
     for ann in resp.annotations:
@@ -53,63 +97,69 @@ def promptUser(msg):
     vim.command('call inputrestore()')
     return result
 
-def findGoals(goalList):
-    global goals
 
-    logger.debug("findGoals(%s)" % goalList)
-    vim.command('syn sync fromstart') # TODO: This should become obsolete given good sync rules in the syntax file.
+def find_goals_from_current_buffer(goals: List[int]) -> Iterator[Goal]:
+    """Find goals in the current buffer.
 
-    goals = {}
-    lines = vim.current.buffer
-    row = 1
-    agdaHolehlID = vim.eval('hlID("agdaHole")')
-    logger.debug("agdaHolehlID: %s" % agdaHolehlID)
-    for line in lines:
-        line_bytes = line.encode('utf-8')
+    Yields:
+        Goal objects found in the current buffer.
+        '?' is replaced with '{!!}'.
+    """
+    pattern = re.compile("\\?|{[-!]|[-!]}|--|^%.*\\\\begin{code}|\\\\begin{code}|\\\\end{code}|```|#\\+begin_src agda2|#\\+end_src agda2")
 
-        start = 0
-        while start != -1:
-            qstart = line_bytes.find(b"?", start)
-            if qstart != -1:
-                logger.debug("%d: line_bytes[qstart:]: %d: %s" % (row, qstart, line_bytes[qstart:].decode('utf-8')))
-            hstart = line_bytes.find(b"{!", start)
-            if hstart != -1:
-                logger.debug("%d: line_bytes[hstart:]: %d: %s" % (row, hstart, line_bytes[hstart:].decode('utf-8')))
-            if qstart != -1 or hstart != -1:
-                logger.debug("line[%d:]:%s" % (start, line))
-                logger.debug("(qstart, hstart): (%d,%d)" % (qstart, hstart))
-            if qstart == -1:
-                start = hstart
-            elif hstart == -1:
-                start = qstart
-            else:
-                start = min(hstart, qstart)
-            if start != -1:
-                start = start + 1
+    buffer = vim.current.buffer
+    for row, line in enumerate(buffer, start=1):
+        for m in pattern.finditer(line):
+            logger.debug("found pattern %s at %d:%d" % (m.group(), row, m.start()))
+            if m.group() == "?":
+                col0 = m.start()
+                vim.current.buffer[row-1] = line[:col0] + "{!!}" + line[col0+1:]
+                yield Goal(buffer.number, goals.pop(0), vim.current.buffer[row-1][col0:col0+4], OBPoint(row, col0+1), OBPoint(row, col0+1+4))
+            elif m.group() == "{!":
+                hend = line.find("!}", m.end())
+                if hend != -1:
+                    col0 = m.start()
+                    yield Goal(buffer.number, goals.pop(0), line[col0:hend+2], OBPoint(row, col0+1), OBPoint(row, hend+1+2))
 
-                synID = vim.eval('synID("%d", "%d", 0)' % (row, start))
-                logger.debug("synID(%d,%d) = %s" % (row, start, synID))
-                if synID == agdaHolehlID:
-                    logger.debug("goalList: %s" % goalList)
-                    logger.debug("goalList[0]: %s" % goalList[0])
-                    logger.debug("goals[goalList.pop(0)] = (%d,%d)" % (row, start))
-                    goals[goalList.pop(0)] = (row, start)
-                    logger.debug("goals: %s" % goals)
-            if len(goalList) == 0: break
-        if len(goalList) == 0: break
-        row = row + 1
 
-    vim.command('syn sync clear') # TODO: This wipes out any sync rules and should be removed if good sync rules are added to the syntax file.
+def forget_all_goal_properties():
+    global agda_goal_set
+    agda_goal_set.clear()
+    prop_remove({ 'type': 'agdavim:agdaHole', 'all': True })
+    prop_remove({ 'type': 'agdavim:agdaHoleNumber', 'all': True })
 
-def findGoal(row, col):
-    global goals
-    for item in goals.items():
-        logger.debug('item[1][0]: %s' % item[1][0])
-        logger.debug('item[1][1]: %s' % item[1][1])
-        if item[1][0] == row and item[1][1] == col:
+
+def goal_action(goalList: List[int]):
+    global agda_goal_set
+    global id_property_map
+
+    logger.debug("goal_action(%s)" % goalList)
+    vimapi.command('syn sync fromstart') # TODO: This should become obsolete given good sync rules in the syntax file.
+    forget_all_goal_properties()
+    for goal in find_goals_from_current_buffer(goalList):
+        agda_goal_set.add(goal)
+        if goal.contents.startswith("{!") and goal.contents.endswith("!}"):
+            logger.debug("goal action: %s" % goal)
+            pos = goal.pos_start
+            prop_id = gen_property_id()
+            length = goal.pos_end.col - goal.pos_start.col
+            prop = AgdaProperty({ PropertyKey.GOAL_NUMBER: goal.num, PropertyKey.VIRTUAL_TXT: "%s" % goal.num })
+            prop_add(pos.row, pos.col       , {'type': 'agdavim:agdaHole', 'id': str(prop_id), 'length': length})
+            prop_add(pos.row, pos.col+length, {'type': 'agdavim:agdaHoleNumber', 'text': prop[PropertyKey.VIRTUAL_TXT] })
+            id_property_map[prop_id] = prop
+        else:
+            logger.error("unexpected goal: %s" % goal)
+
+    vimapi.command('syn sync clear') # TODO: This wipes out any sync rules and should be removed if good sync rules are added to the syntax file.
+
+
+def findGoal(row: int, col: int) -> Optional[int]:
+    for item in agda_goal_set:
+        logger.debug('find goal: %s' % item)
+        if item.pos_start == OBPoint(row, col):
             logger.debug('findGoal (found) in %s: (%d,%d)' % (item, row, col))
-            return item[0]
-    logger.debug('findGoal (not found) in %s: (%d,%d)' % (goals, row, col))
+            return item.num
+    logger.debug('findGoal (not found) in %s: (%d,%d)' % (agda_goal_set, row, col))
     return None
 
 
@@ -198,7 +248,7 @@ def interpretResponse(responses, quiet = False):
             vim.command('call s:LogAgda("%s","%s",%s)' % (strings[0], strings[1], 'v:true' if response.append else 'v:false'))
 
         elif isinstance(response, GoalsActionResponse):
-            findGoals(response.goals)
+            goal_action(response.goals)
 
         elif isinstance(response, MakeCaseActionExtendlamResponse):
             newcls = [ cls.replace("?", "{!   !}") for cls in response.newcls ] # this probably isn't safe
@@ -315,7 +365,8 @@ def replaceHole(replacement):
             return
     vim.current.line = line[:start] + rep + line[end:]
 
-def getHoleBodyAtCursor():
+
+def getHoleBodyAtCursor() -> Tuple[str, Optional[int]]:
     (r, c) = vim.current.window.cursor
     line = vim.current.line
     line_bytes = line.encode('utf-8')
