@@ -1,3 +1,4 @@
+from __future__ import annotations
 from enum import IntEnum, unique
 
 @unique
@@ -8,11 +9,11 @@ class ComputeMode(IntEnum):
     HeadCompute = 3
 
     @classmethod
-    def from_int(cls, value: int) -> 'ComputeMode':
+    def from_int(cls, value: int) -> ComputeMode:
         return cls(value)
 
     @classmethod
-    def parse(cls, text: str) -> 'ComputeMode':
+    def parse(cls, text: str) -> ComputeMode:
         if text == "DefaultCompute":
             return cls.DefaultCompute
         if text == "IgnoreAbstract":
@@ -32,11 +33,11 @@ class NormaliseType(IntEnum):
     HeadNormal = 3
 
     @classmethod
-    def from_int(cls, value: int) -> 'NormaliseType':
+    def from_int(cls, value: int) -> NormaliseType:
         return cls(value)
 
     @classmethod
-    def parse(cls, text: str) -> 'NormaliseType':
+    def parse(cls, text: str) -> NormaliseType:
         if text == "Simplified":
             return cls.Simplified
         if text == "Instantiated":
@@ -56,11 +57,11 @@ class NormaliseAsIsType(IntEnum):
     HeadNormal = 3
 
     @classmethod
-    def from_int(cls, value: int) -> 'NormaliseAsIsType':
+    def from_int(cls, value: int) -> NormaliseAsIsType:
         return cls(value)
 
     @classmethod
-    def parse(cls, text: str) -> 'NormaliseAsIsType':
+    def parse(cls, text: str) -> NormaliseAsIsType:
         if text == "AsIs":
             return cls.AsIs
         if text == "Simplified":

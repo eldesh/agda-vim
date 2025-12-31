@@ -17,6 +17,7 @@ from .property import AgdaProperty, PropertyId, PropertyKey
 from .vimapi import prop_add, prop_remove, prop_list
 from . import vimapi
 from .response.filepos import OBPoint
+from .protocol import NormaliseType, ComputeMode
 
 
 logger = logging.getLogger(__name__)
@@ -91,7 +92,7 @@ def highlight_cmds_from_response(resp: HighlightAddAnnotationsResponse) -> Itera
                                 ann.filepos)
 
 
-def promptUser(msg):
+def promptUser(msg: str) -> str:
     vim.command('call inputsave()')
     result = vim.eval('input("%s")' % msg)
     vim.command('call inputrestore()')
@@ -183,12 +184,12 @@ def getOutput() -> Iterator[response.Response]:
 
 
 # This is not very efficient presumably.
-def c2b(n):
+def c2b(n: int):
     '''Convert a character index to a byte index in the current buffer.'''
     return int(vim.eval('byteidx(join(getline(1, "$"), "\n"),%d)' % n))
 
 # See https://github.com/agda/agda/blob/323f58f9b8dad239142ed1dfa0c60338ea2cb157/src/data/emacs-mode/annotation.el#L112
-def parseAnnotation(response):
+def parseAnnotation(response: HighlightAddAnnotationsResponse):
     global annotations
     # if response.removeHighlighting == RemoveTokenBasedHighlighting.RemoveHighlighting:
     #    TODO: Remove token based highlighting
@@ -323,19 +324,19 @@ def interpretResponse(responses, quiet = False):
         else:
             pass # print(response)
 
-def sendCommand(arg, highlight = False, quiet = False):
+def sendCommand(arg: str, highlight: bool = False, quiet: bool = False):
     vim.command('silent! write')
-    f = vim.current.buffer.name
+    f: str = vim.current.buffer.name
     _highlight_level = Agda2HighlightLevel() if highlight else HighlightLevel.NONE
     logger.debug('IOTCM %s %s Indirect (%s)\nx\n' % (escape(f), _highlight_level, arg))
     # The x is a really hacky way of getting a consistent final response.  Namely, "cannot read"
     agda.stdin.write('IOTCM %s %s Indirect (%s)\nx\n' % (escape(f), _highlight_level, arg))
     interpretResponse(getOutput(), quiet)
 
-def sendCommandLoadHighlightInfo(file, quiet):
+def sendCommandLoadHighlightInfo(file: str, quiet: bool):
     sendCommand('Cmd_load_highlighting_info %s' % escape(file), highlight = True, quiet = quiet)
 
-def sendCommandLoad(file, quiet):
+def sendCommandLoad(file: str, quiet: bool):
     if agda.version < AgdaVersion(2,5,0,0): # in 2.5 they changed it so Cmd_load takes commandline arguments
         incpaths = (path.decode('utf-8') for path in vim.vars['agdavim_agda_includepathlist'])
     else:
@@ -373,7 +374,7 @@ def replaceHole(replacement):
     vim.current.line = line[:start] + rep + line[end:]
 
 
-def getHoleBodyAtCursor() -> Tuple[str, Optional[int]]:
+def getHoleBodyAtCursor() -> Optional[Tuple[str, Optional[int]]]:
     (r, c) = vim.current.window.cursor
     line = vim.current.line
     line_bytes = line.encode('utf-8')
@@ -414,7 +415,7 @@ def Agda2HighlightLevel() -> HighlightLevel:
 ## Directly exposed functions: {
 
 @vim_func
-def AgdaRestartAgda(path):
+def AgdaRestartAgda(path: str):
     '''Tries to start or restart the Agda process.'''
     global agda
 
@@ -427,7 +428,7 @@ def AgdaRestartAgda(path):
 
 
 @vim_func(conv={'quiet': vim_bool})
-def AgdaHighlightToken(quiet):
+def AgdaHighlightToken(quiet: bool):
     filename = vim.current.buffer.name
     sendCommand('Cmd_tokenHighlighting %s %s' % (escape(filename), HighlightRemove.KEEP), highlight = True, quiet = quiet)
 
@@ -443,12 +444,12 @@ def AgdaQuitAgda():
         agda = None
 
 @vim_func(conv={'quiet': vim_bool})
-def AgdaShowVersion(quiet):
+def AgdaShowVersion(quiet: bool):
     sendCommand('Cmd_show_version', highlight = False, quiet = quiet)
 
 
 @vim_func(conv={'quiet': vim_bool})
-def AgdaLoad(quiet):
+def AgdaLoad(quiet: bool):
     f = vim.current.buffer.name
     sendCommandLoad(f, quiet)
     if vim.vars['agdavim_enable_goto_definition']:
@@ -456,7 +457,7 @@ def AgdaLoad(quiet):
 
 
 @vim_func(conv={'quiet': vim_bool})
-def AgdaLoadHighlightInfo(quiet):
+def AgdaLoadHighlightInfo(quiet: bool):
     f = vim.current.buffer.name
     sendCommandLoadHighlightInfo(f, quiet)
 
@@ -529,7 +530,7 @@ def AgdaMakeCase():
 
 
 @vim_func(conv={'pmlambda': vim_bool})
-def AgdaRefine(pmlambda):
+def AgdaRefine(pmlambda: bool):
     result = getHoleBodyAtCursor()
     if result is None:
         print("No hole under the cursor")
@@ -540,7 +541,7 @@ def AgdaRefine(pmlambda):
 
 
 @vim_func(conv={'quiet': vim_bool})
-def AgdaAutoMaybeAll(quiet):
+def AgdaAutoMaybeAll(quiet: bool):
     result = getHoleBodyAtCursor()
     if result is None:
         sendCommand('Cmd_autoAll', highlight = False, quiet = quiet)
@@ -554,7 +555,7 @@ def AgdaAutoMaybeAll(quiet):
 
 
 @vim_func(conv={'normalise': vim_normalise})
-def AgdaGoalType(normalise):
+def AgdaGoalType(normalise: NormaliseType):
     """Show the type of the goal at point"""
     result = getHoleBodyAtCursor()
     if result is None:
@@ -566,7 +567,7 @@ def AgdaGoalType(normalise):
 
 
 @vim_func(conv={'normalise': vim_normalise})
-def AgdaGoalAndContext(normalise):
+def AgdaGoalAndContext(normalise: NormaliseType):
     '''Shows the type of the goal at point and the current context'''
     result = getHoleBodyAtCursor()
     if result is None:
@@ -578,7 +579,7 @@ def AgdaGoalAndContext(normalise):
 
 
 @vim_func(conv={'normalise': vim_normalise})
-def AgdaGoalAndContextAndInferred(normalise):
+def AgdaGoalAndContextAndInferred(normalise: NormaliseType):
     '''Shows the context, the goal and the given expression's inferred type'''
     result = getHoleBodyAtCursor()
     if result is None:
@@ -593,7 +594,7 @@ def AgdaGoalAndContextAndInferred(normalise):
 
 
 @vim_func(conv={'normalise': vim_normalise})
-def AgdaGoalAndContextAndChecked(normalise):
+def AgdaGoalAndContextAndChecked(normalise: NormaliseType):
     '''Shows the context, the goal and check the given expression's against the hole's type'''
     result = getHoleBodyAtCursor()
     if result is None:
@@ -608,7 +609,7 @@ def AgdaGoalAndContextAndChecked(normalise):
 
 
 @vim_func(conv={'normalise': vim_normalise})
-def AgdaShowContext(normalise):
+def AgdaShowContext(normalise: NormaliseType):
     '''Show the context of the goal at point'''
     result = getHoleBodyAtCursor()
     if result is None:
@@ -620,7 +621,7 @@ def AgdaShowContext(normalise):
 
 
 @vim_func(conv={'normalise': vim_normalise})
-def AgdaInferTypeMaybeToplevel(normalise):
+def AgdaInferTypeMaybeToplevel(normalise: NormaliseType):
     result = getHoleBodyAtCursor()
     if result is None:
         sendCommand('Cmd_infer_toplevel %s %s' % (normalise.name, escape(promptUser("expression to type: "))))
@@ -631,7 +632,7 @@ def AgdaInferTypeMaybeToplevel(normalise):
 
 
 @vim_func(conv={'computeMode': vim_compute_mode})
-def AgdaComputeNormalisedMaybeToplevel(computeMode):
+def AgdaComputeNormalisedMaybeToplevel(computeMode: ComputeMode):
     result = getHoleBodyAtCursor()
 
     if agda.version < AgdaVersion(2,5,2,0):
@@ -654,7 +655,7 @@ def AgdaComputeNormalisedMaybeToplevel(computeMode):
 
 
 @vim_func
-def AgdaWhyInScope(termName):
+def AgdaWhyInScope(termName: str):
     result = getHoleBodyAtCursor() if termName == '' else None
 
     if result is None:
@@ -668,7 +669,7 @@ def AgdaWhyInScope(termName):
 
 
 @vim_func(conv={'normalise': vim_normalise})
-def AgdaSearchAbout(normalise, name: str = ''):
+def AgdaSearchAbout(normalise: NormaliseType, name: str = ''):
     '''Search About an identifier.'''
     cname = getWordAtCursor() if name == '' else name
     query = promptUser("Name: ") if cname == '' else cname
@@ -676,12 +677,12 @@ def AgdaSearchAbout(normalise, name: str = ''):
 
 
 @vim_func(conv={'normalise': vim_normalise})
-def AgdaShowGoals(normalise):
+def AgdaShowGoals(normalise: NormaliseType):
     sendCommand('Cmd_metas %s' % normalise.name)
 
 
 @vim_func(conv={'normalise': vim_normalise})
-def AgdaModuleContentsMaybeToplevel(normalise, moduleName = ''):
+def AgdaModuleContentsMaybeToplevel(normalise: NormaliseType, moduleName: str = ''):
     result = getHoleBodyAtCursor() if moduleName == '' else None
 
     if agda.version < AgdaVersion(2,4,2,0):
@@ -703,7 +704,7 @@ def AgdaModuleContentsMaybeToplevel(normalise, moduleName = ''):
 
 
 @vim_func(conv={'normalise': vim_normalise_asis})
-def AgdaHelperFunctionType(normalise):
+def AgdaHelperFunctionType(normalise: NormaliseType):
     result = getHoleBodyAtCursor()
 
     if result is None:
@@ -716,7 +717,7 @@ def AgdaHelperFunctionType(normalise):
         sendCommand('Cmd_helper_function %s %d noRange %s' % (normalise.name, result[1], escape(result[0])))
 
 @vim_func
-def AgdaVimSetLoggingLevel(level):
+def AgdaVimSetLoggingLevel(level: int):
     log.set_logging_level(level=level)
     print("Set logging level to %s" % level)
 
