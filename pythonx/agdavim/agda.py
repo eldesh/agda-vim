@@ -92,11 +92,11 @@ def highlight_cmds_from_response(resp: HighlightAddAnnotationsResponse) -> Itera
                                 ann.filepos)
 
 
-def promptUser(msg: str) -> str:
-    vim.command('call inputsave()')
-    result = vim.eval('input("%s")' % msg)
-    vim.command('call inputrestore()')
-    return result
+def promptUser(prompt: str) -> str:
+    vimapi.inputsave()
+    input = vimapi.input(prompt)
+    vimapi.inputrestore()
+    return input
 
 
 def find_goals_from_current_buffer(goals: List[int]) -> Iterator[Goal]:

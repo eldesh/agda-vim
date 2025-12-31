@@ -35,25 +35,13 @@ prop_find_: Callable[[dict[str, GroundType]], dict[str, GroundType]] = Function(
 
 prop_list_: Callable[[int, dict[str, GroundType]], List[dict[str, GroundType]]] = Function("prop_list")
 
-@overload
-def prop_remove_(props: dict[str, GroundType]) -> int:
-    pass
+input_: Callable[..., str] = Function("input")
 
-@overload
-def prop_remove_(props: dict[str, GroundType], lnum: int) -> int:
-    pass
+inputsave_: Callable[[], int] = Function("inputsave")
 
-@overload
-def prop_remove_(props: dict[str, GroundType], lnum: int, lnumend: int) -> int:
-    pass
+inputrestore_: Callable[[], int] = Function("inputrestore")
 
-def prop_remove_(props: dict[str, GroundType], lnum: Optional[int] = None, lnumend: Optional[int] = None) -> int:
-    if lnum is None:
-        return Function("prop_remove")(props)
-    elif lnumend is None:
-        return Function("prop_remove")(props, lnum)
-    else:
-        return Function("prop_remove")(props, lnum, lnumend)
+prop_remove_: Callable[..., int] = Function("prop_remove")
 
 
 def prop_add(line: int, col: int, prop: dict[str, GroundType]) -> int:
@@ -65,6 +53,19 @@ def prop_find(prop: dict[str, GroundType]) -> dict[str, GroundType]:
 def prop_list(lnum: int, prop: dict[str, GroundType]) -> List[dict[str, GroundType]]:
     return prop_list_(lnum, prop)
 
+
+@overload
+def prop_remove(props: dict[str, GroundType]) -> int:
+    pass
+
+@overload
+def prop_remove(props: dict[str, GroundType], lnum: int) -> int:
+    pass
+
+@overload
+def prop_remove(props: dict[str, GroundType], lnum: int, lnumend: int) -> int:
+    pass
+
 def prop_remove(props: dict[str, GroundType], lnum: Optional[int] = None, lnumend: Optional[int] = None) -> int:
     if lnum is None:
         return prop_remove_(props)
@@ -72,3 +73,15 @@ def prop_remove(props: dict[str, GroundType], lnum: Optional[int] = None, lnumen
         return prop_remove_(props, lnum)
     else:
         return prop_remove_(props, lnum, lnumend)
+
+def input(prompt: str, text: Optional[str] = None) -> str:
+    if text is not None:
+        return input_(prompt, text)
+    return input_(prompt)
+
+def inputsave() -> int:
+    return inputsave_()
+
+def inputrestore() -> int:
+    return inputrestore_()
+
