@@ -3,7 +3,9 @@ from typing import Iterator, List, Union
 import logging
 from dataclasses import dataclass
 
-from .token import Token, TokenString, TokenAtom, TokenSymbol, TokenKind, tokenize
+from .token import Token, TokenString, TokenAtom, TokenKind, tokenize
+
+logger = logging.getLogger(__name__)
 
 @dataclass(order=True, frozen=True, slots=True)
 class Nil:
@@ -24,16 +26,14 @@ class Symbol:
 
 @dataclass(order=True, frozen=True, slots=True)
 class Pair:
-    car: "SExpr"
-    cdr: "SExpr"
+    car: SExpr
+    cdr: SExpr
     
     def __str__(self):
         return format([self.car, Symbol('.'), self.cdr])
 
 SAtom = Union[Symbol, str, int, float, bool, Nil]
 SExpr = Union[SAtom, List["SExpr"], Pair]
-
-logger = logging.getLogger(__name__)
 
 NIL = Nil()
 DOT = Symbol('.')

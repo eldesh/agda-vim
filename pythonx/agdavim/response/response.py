@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Union, List, Optional, ClassVar, Tuple
+from typing import Any, Union, List, Optional, ClassVar
 from dataclasses import dataclass
 from enum import IntEnum, unique
 from abc import ABC, abstractmethod
@@ -7,20 +7,42 @@ import logging
 
 from . import sexpr
 from .sexpr import Nil, Symbol, Pair, QUOTE, qq
-from .filepos import FilePosition, Origin1, UnitChar
+from .filepos import OCFilePosition
 
 logger = logging.getLogger(__name__)
 
 class ParseError(Exception):
     _data: str
-    _cls: type[Any]
-    def __init__(self, data: str, cls: type[Any]):
+    _exp: tuple[type[object], ...]
+
+    def __init__(self, data: str, exp: Union[type[object], tuple[type[object], ...]]):
         super().__init__()
         self._data = data
-        self._cls = cls
+        if isinstance(exp, tuple):
+            self._exp = exp
+        else:
+            self._exp = (exp,)
 
     def __str__(self):
-        return "Failed to parse %s from data: %s" % (self._cls.__name__, self._data)
+        names = " | ".join(ty.__name__ for ty in self._exp)
+        return "Failed to parse %s from data: %s" % (names, self._data)
+
+
+class ParseSExprError(Exception):
+    _data: sexpr.SExpr
+    _exp: tuple[type[object], ...]
+
+    def __init__(self, data: sexpr.SExpr, exp: Union[type[object], tuple[type[object], ...]]):
+        super().__init__()
+        self._data = data
+        if isinstance(exp, tuple):
+            self._exp = exp
+        else:
+            self._exp = (exp,)
+
+    def __str__(self):
+        names = " | ".join(ty.__name__ for ty in self._exp)
+        return "Failed to parse %s from data: %s" % (names, self._data)
 
 
 class Response(ABC):
@@ -52,10 +74,10 @@ class ExitDoneResponse(Response):
         return [Symbol(self.TAG)]
 
     @classmethod
-    def parse(cls, str) -> 'ExitDoneResponse':
-        if sexpr.parse(str) == [Symbol(cls.TAG)]:
+    def parse(cls, ss: str) -> ExitDoneResponse:
+        if sexpr.parse(ss) == [Symbol(cls.TAG)]:
             return cls()
-        raise ParseError(str, cls)
+        raise ParseError(ss, cls)
 
 
 class AbortDoneResponse(Response):
@@ -71,10 +93,10 @@ class AbortDoneResponse(Response):
         return [Symbol(self.TAG)]
 
     @classmethod
-    def parse(cls, str) -> 'AbortDoneResponse':
-        if sexpr.parse(str) == [Symbol(cls.TAG)]:
+    def parse(cls, ss: str) -> AbortDoneResponse:
+        if sexpr.parse(ss) == [Symbol(cls.TAG)]:
             return cls()
-        raise ParseError(str, cls)
+        raise ParseError(ss, cls)
 
 
 class HighlightClearResponse(Response):
@@ -90,10 +112,10 @@ class HighlightClearResponse(Response):
         return [Symbol(self.TAG)]
 
     @classmethod
-    def parse(cls, str) -> 'HighlightClearResponse':
-        if sexpr.parse(str) == [Symbol(cls.TAG)]:
+    def parse(cls, ss: str) -> HighlightClearResponse:
+        if sexpr.parse(ss) == [Symbol(cls.TAG)]:
             return cls()
-        raise ParseError(str, cls)
+        raise ParseError(ss, cls)
 
 
 class HighlightLoadAndDeleteActionResponse(Response):
@@ -116,7 +138,7 @@ class HighlightLoadAndDeleteActionResponse(Response):
         return self._file
 
     @classmethod
-    def parse(cls, ss) -> 'HighlightLoadAndDeleteActionResponse':
+    def parse(cls, ss: str) -> HighlightLoadAndDeleteActionResponse:
         parsed = sexpr.parse(ss)
         if (isinstance(parsed, list)
             and 1 <= len(parsed)
@@ -143,7 +165,7 @@ class VerboseResponse(Response):
         return [Symbol(self.TAG), self._message]
 
     @classmethod
-    def parse(cls, ss) -> 'VerboseResponse':
+    def parse(cls, ss: str) -> VerboseResponse:
         parsed = sexpr.parse(ss)
         if (isinstance(parsed, list)
             and len(parsed) == 2
@@ -177,7 +199,7 @@ class InfoActionResponse(Response):
         return [Symbol(self.TAG), self._name, self._text, True if self._append else sexpr.NIL]
 
     @classmethod
-    def parse(cls, ss) -> 'InfoActionResponse':
+    def parse(cls, ss: str) -> InfoActionResponse:
         parsed = sexpr.parse(ss)
         if (isinstance(parsed, list)
             and len(parsed) == 4
@@ -222,7 +244,7 @@ class InfoActionAndCopyResponse(Response):
         return [Symbol(self.TAG), self._name, self._text, 't' if self._append else sexpr.NIL]
 
     @classmethod
-    def parse(cls, ss) -> 'InfoActionAndCopyResponse':
+    def parse(cls, ss: str) -> InfoActionAndCopyResponse:
         parsed = sexpr.parse(ss)
         if (isinstance(parsed, list)
             and len(parsed) <= 4
@@ -262,7 +284,7 @@ class StatusActionResponse(Response):
         return [Symbol(self.TAG), self._status]
 
     @classmethod
-    def parse(cls, ss) -> 'StatusActionResponse':
+    def parse(cls, ss: str) -> StatusActionResponse:
         parsed = sexpr.parse(ss)
         if (isinstance(parsed, list)
             and len(parsed) == 2
@@ -292,13 +314,13 @@ class RemoveTokenBasedHighlighting(IntEnum):
             return sexpr.NIL
 
     @classmethod
-    def parse(cls, s: str) -> 'RemoveTokenBasedHighlighting':
-        parsed = sexpr.parse(s)
+    def parse(cls, ss: str) -> RemoveTokenBasedHighlighting:
+        parsed = sexpr.parse(ss)
         if isinstance(parsed, Symbol) and parsed.name == "remove":
             return cls.RemoveHighlighting
         if isinstance(parsed, Nil):
             return cls.KeepHighlighting
-        raise ValueError("Invalid value for RemoveTokenBasedHighlighting: %s" % s)
+        raise ValueError("Invalid value for RemoveTokenBasedHighlighting: %s" % ss)
 
 
 class HighlightAnnotation:
@@ -316,19 +338,19 @@ class HighlightAnnotation:
         aspects (List[str]): List of aspect names associated with the annotation.
         token_based (Optional[Union[bool, Nil]]): Optional token-based flag (True or nil).
         info (Optional[Union[str, Nil]]): Optional information string or nil.
-        filepos (Optional[FilePosition]): Optional file position (1-origin, character-based).
+        filepos (Optional[OCFilePosition]): Optional file position (1-origin, character-based).
     """
     _from: int
     _to: int
     _aspects: List[str]
     _token_based: Optional[Union[bool, Nil]]
     _info: Optional[Union[str, Nil]]
-    _filepos: Optional[FilePosition[Origin1, UnitChar]]
+    _filepos: Optional[OCFilePosition]
 
     def __init__(self, from_: int, to: int, aspects: List[str],
                  token_based: Optional[Union[bool, Nil]] = None,
                  info: Optional[Union[str, Nil]] = None,
-                 filepos: Optional[FilePosition[Origin1, UnitChar]] = None):
+                 filepos: Optional[OCFilePosition] = None):
         self._from = from_
         self._to = to
         self._aspects = aspects
@@ -340,13 +362,14 @@ class HighlightAnnotation:
         filepos = [] if self._filepos is None else [self._filepos.to_sexpr()]
         info = [] if self._info is None else [self._info]
         token_based = [] if self._token_based is None else [self._token_based]
-        return [self._from, self._to, [ Symbol(asp) for asp in self._aspects ]] + token_based + info + filepos
+        aspects: List[sexpr.SExpr] = [[ Symbol(asp) for asp in self._aspects ]]
+        return [self._from, self._to] + aspects + token_based + info + filepos
 
     def __str__(self):
         return sexpr.format(self.to_sexpr())
 
     @classmethod
-    def parse(cls, expr: sexpr.SExpr) -> 'HighlightAnnotation':
+    def parse(cls, expr: sexpr.SExpr) -> HighlightAnnotation:
         # e.g. [94, 95, [Symbol(name='function')], nil, nil, Pair(car="Issue4954-2.agda", cdr=94)]
         if (isinstance(expr, list)
             and 3 <= len(expr) <= 6
@@ -356,7 +379,7 @@ class HighlightAnnotation:
             and all(isinstance(x, Symbol) for x in expr[2])):
             from_ = expr[0]
             to = expr[1]
-            aspects = [ sym.name for sym in expr[2] ]
+            aspects: List[str] = [ sym.name for sym in expr[2] ]
             token_based = None
             info = None
             filepos = None
@@ -364,22 +387,21 @@ class HighlightAnnotation:
                 if isinstance(expr[3], (bool, Nil)):
                     token_based = expr[3]
                 else:
-                    raise ParseError(expr, cls)
+                    raise ParseSExprError(expr, cls)
             if len(expr) >= 5:
                 if isinstance(expr[4], (str, Nil)):
                     info = expr[4]
                 else:
-                    raise ParseError(expr, cls)
+                    raise ParseSExprError(expr, cls)
             if len(expr) == 6:
                 if (isinstance(expr[5], Pair)
                     and isinstance(expr[5].car, str)
                     and isinstance(expr[5].cdr, int)):
-                    filepos = FilePosition(expr[5].car, expr[5].cdr)
+                    filepos = OCFilePosition(expr[5].car, expr[5].cdr)
                 else:
-                    raise ParseError(expr, cls)
+                    raise ParseSExprError(expr, cls)
             return cls(from_, to, aspects, token_based, info, filepos)
-        raise ParseError(expr, cls)
-
+        raise ParseSExprError(expr, cls)
 
     @property
     def from_(self) -> int:
@@ -402,7 +424,7 @@ class HighlightAnnotation:
         return self._info
 
     @property
-    def filepos(self) -> Optional[FilePosition[Origin1, UnitChar]]:
+    def filepos(self) -> Optional[OCFilePosition]:
         return self._filepos
 
 
@@ -425,15 +447,15 @@ class HighlightAddAnnotationsResponse(Response):
         return [Symbol(self.tag), qq(remove)] + [qq(ann.to_sexpr()) for ann in self._annotations]
 
     @classmethod
-    def _remove_of(cls, expr) -> RemoveTokenBasedHighlighting:
+    def _remove_of(cls, expr: sexpr.SExpr) -> RemoveTokenBasedHighlighting:
         if expr == qq(Symbol('remove')):
             return RemoveTokenBasedHighlighting.RemoveHighlighting
         if expr == qq(sexpr.NIL):
             return RemoveTokenBasedHighlighting.KeepHighlighting
-        raise ParseError(expr, RemoveTokenBasedHighlighting)
+        raise ParseSExprError(expr, RemoveTokenBasedHighlighting)
 
     @classmethod
-    def parse(cls, ss) -> 'HighlightAddAnnotationsResponse':
+    def parse(cls, ss: str) -> HighlightAddAnnotationsResponse:
         parsed = sexpr.parse(ss)
         if (isinstance(parsed, list)
             and 2 <= len(parsed)
@@ -454,7 +476,7 @@ class HighlightAddAnnotationsResponse(Response):
         return self._annotations
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(order=True, frozen=True, slots=True)
 class InteractionId:
     _id: int
 
@@ -466,26 +488,26 @@ class InteractionId:
         return self._id
 
     @classmethod
-    def parse(cls, ss: str) -> 'InteractionId':
+    def parse(cls, ss: str) -> InteractionId:
         return cls(int(ss))
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(order=True, frozen=True, slots=True)
 class GiveString:
-    text: str
+    _text: str
 
     def __str__(self):
-        return self.text
+        return self._text
 
     def to_sexpr(self):
-        return self.text
+        return self._text
 
     @property
     def text(self) -> str:
-        return self.text
+        return self._text
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(order=True, frozen=True, slots=True)
 class GiveParen:
     def __str__(self):
         return sexpr.format(self.to_sexpr())
@@ -494,14 +516,14 @@ class GiveParen:
         return qq(Symbol('paren'))
 
     @classmethod
-    def parse(cls, ss: str) -> 'GiveParen':
+    def parse(cls, ss: str) -> GiveParen:
         val = cls()
         if sexpr.parse(ss) == val.to_sexpr():
-            return cls()
+            return val
         raise ParseError(ss, cls)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(order=True, frozen=True, slots=True)
 class GiveNoParen:
     def __str__(self):
         return sexpr.format(self.to_sexpr())
@@ -510,7 +532,7 @@ class GiveNoParen:
         return qq(Symbol('no-paren'))
 
     @classmethod
-    def parse(cls, ss: str) -> 'GiveNoParen':
+    def parse(cls, ss: str) -> GiveNoParen:
         val = cls()
         if sexpr.parse(ss) == val.to_sexpr():
             return val
@@ -526,7 +548,7 @@ def give_result_from(expr: sexpr.SExpr) -> GiveResult:
         return GiveParen()
     if GiveNoParen().to_sexpr() == expr:
         return GiveNoParen()
-    raise ParseError(expr, GiveResult)
+    raise ParseSExprError(expr, (GiveString, GiveParen, GiveNoParen)) # GiveResult candidates
 
 
 class GiveActionResponse(Response):
@@ -544,10 +566,10 @@ class GiveActionResponse(Response):
         return sexpr.format(self.to_sexpr())
 
     def to_sexpr(self) -> sexpr.SExpr:
-        return [Symbol(self.tag), self._interactionId._id, self._giveResult.to_sexpr()]
+        return [Symbol(self.tag), self._interactionId.id, self._giveResult.to_sexpr()]
 
     @classmethod
-    def parse(cls, ss) -> 'GiveActionResponse':
+    def parse(cls, ss: str) -> GiveActionResponse:
         parsed = sexpr.parse(ss)
         if (isinstance(parsed, list)
             and len(parsed) == 3
@@ -597,7 +619,7 @@ class GoalsActionResponse(Response):
         return self._goals
 
     @classmethod
-    def parse(cls, ss) -> 'GoalsActionResponse':
+    def parse(cls, ss: str) -> GoalsActionResponse:
         parsed = sexpr.parse(ss)
         priority = None
         if (isinstance(parsed, sexpr.Pair)
@@ -649,7 +671,7 @@ class MakeCaseActionResponse(Response):
         return self._newcls
 
     @classmethod
-    def parse(cls, ss) -> 'MakeCaseActionResponse':
+    def parse(cls, ss: str) -> MakeCaseActionResponse:
         parsed = sexpr.parse(ss)
         priority = None
         if (isinstance(parsed, sexpr.Pair)
@@ -701,7 +723,7 @@ class MakeCaseActionExtendlamResponse(Response):
         return self._newcls
 
     @classmethod
-    def parse(cls, ss) -> 'MakeCaseActionExtendlamResponse':
+    def parse(cls, ss: str) -> MakeCaseActionExtendlamResponse:
         parsed = sexpr.parse(ss)
         priority = None
         if (isinstance(parsed, sexpr.Pair)
@@ -753,7 +775,7 @@ class SolveAllActionResponse(Response):
         return self._solutions
 
     @classmethod
-    def parse(cls, ss) -> 'SolveAllActionResponse':
+    def parse(cls, ss: str) -> SolveAllActionResponse:
         parsed = sexpr.parse(ss)
         priority = None
         if (isinstance(parsed, sexpr.Pair)
@@ -811,7 +833,7 @@ class MaybeGotoResponse(Response):
         return self._position
 
     @classmethod
-    def parse(cls, ss) -> 'MaybeGotoResponse':
+    def parse(cls, ss: str) -> MaybeGotoResponse:
         parsed = sexpr.parse(ss)
         priority = None
         if (isinstance(parsed, sexpr.Pair)
@@ -859,5 +881,7 @@ def parse_response(ss: str) -> Response:
         try:
             return resp_cls.parse(ss)
         except ParseError:
+            continue
+        except ParseSExprError:
             continue
     raise ParseError(ss, Response)
