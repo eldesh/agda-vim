@@ -612,9 +612,8 @@ class GoalsActionResponse(Response):
         if (isinstance(cmd, list)
             and len(cmd) == 2
             and cmd[0] == Symbol(cls.TAG)
-            and isinstance(cmd[1], list)
-            and len(cmd[1]) == 2
-            and cmd[1][0] == QUOTE
+            and sexpr.isqq(cmd[1])
+            and isinstance(cmd[1][1], list)
             and all(isinstance(x, int) for x in cmd[1][1])):
             goals = cmd[1][1]
             return cls(priority, goals)
@@ -665,9 +664,8 @@ class MakeCaseActionResponse(Response):
         if (isinstance(cmd, list)
             and len(cmd) == 2
             and cmd[0] == Symbol(cls.TAG)
-            and isinstance(cmd[1], list)
-            and len(cmd[1]) == 2
-            and cmd[1][0] == QUOTE
+            and sexpr.isqq(cmd[1])
+            and isinstance(cmd[1][1], list)
             and all(isinstance(x, str) for x in cmd[1][1])):
             newcls = cmd[1][1]
             return cls(priority, newcls)
@@ -718,9 +716,8 @@ class MakeCaseActionExtendlamResponse(Response):
         if (isinstance(cmd, list)
             and len(cmd) == 2
             and cmd[0] == Symbol(cls.TAG)
-            and isinstance(cmd[1], list)
-            and len(cmd[1]) == 2
-            and cmd[1][0] == QUOTE
+            and sexpr.isqq(cmd[1])
+            and isinstance(cmd[1][1], list)
             and all(isinstance(x, str) for x in cmd[1][1])):
             newcls = cmd[1][1]
             return cls(priority, newcls)
@@ -771,9 +768,7 @@ class SolveAllActionResponse(Response):
         if (isinstance(cmd, list)
             and len(cmd) == 2
             and cmd[0] == Symbol(cls.TAG)
-            and isinstance(cmd[1], list)
-            and len(cmd[1]) == 2
-            and cmd[1][0] == QUOTE
+            and sexpr.isqq(cmd[1])
             and isinstance(cmd[1][1], list)
             and all(isinstance(x, int) or isinstance(x, str) for x in cmd[1][1])):
             solutions = cmd[1][1]
@@ -831,9 +826,7 @@ class MaybeGotoResponse(Response):
         if (isinstance(cmd, list)
             and len(cmd) == 2
             and cmd[0] == Symbol(cls.TAG)
-            and isinstance(cmd[1], list)
-            and len(cmd[1]) == 2
-            and cmd[1][0] == QUOTE
+            and sexpr.isqq(cmd[1])
             and isinstance(cmd[1][1], sexpr.Pair)
             and isinstance(cmd[1][1].car, str)
             and isinstance(cmd[1][1].cdr, int)):
