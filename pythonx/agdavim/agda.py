@@ -10,13 +10,13 @@ from .agda_version import AgdaVersion
 from .command import HighlightLevel, Remove as HighlightRemove, HighlightCommand
 from . import log
 from . import response
-from .response import FilePosition, InfoActionResponse, InfoActionAndCopyResponse, GoalsActionResponse, GiveActionResponse, MakeCaseActionResponse, MakeCaseActionExtendlamResponse, HighlightAddAnnotationsResponse, GiveString, RemoveTokenBasedHighlighting
+from .response import InfoActionResponse, InfoActionAndCopyResponse, GoalsActionResponse, GiveActionResponse, MakeCaseActionResponse, MakeCaseActionExtendlamResponse, HighlightAddAnnotationsResponse, GiveString, RemoveTokenBasedHighlighting
 from .response import sexpr
 from .vimfunc import vim_func, vim_bool, vim_int_range, vim_normalise, vim_compute_mode, vim_normalise_asis
 from .property import AgdaProperty, PropertyId, PropertyKey
 from .vimapi import prop_add, prop_remove, prop_list
 from . import vimapi
-from .response.filepos import OBPoint
+from .response.filepos import OBPoint, OCFilePosition
 from .protocol import NormaliseType, ComputeMode
 
 
@@ -128,7 +128,7 @@ def forget_all_goal_properties():
     global id_property_map
 
     agda_goal_set.clear()
-    for lnum in range(1, len(vim.current.buffer)+1):
+    for lnum in range(1, len(vim.current.buffer)+1): # 1-origin
         for prop in prop_list(lnum, { 'types': ['agdavim:agdaHole'] }):
             logger.debug("delete: prop: %s" % prop)
             del id_property_map[PropertyId(int(prop["id"]))]
@@ -197,7 +197,7 @@ def parseAnnotation(response: HighlightAddAnnotationsResponse):
     # logger.debug('annotations: %s' % ('[' + ' '.join([str(ann) for ann in annotations[:8]]) + ']'))
 
 
-def searchAnnotation(anns: List[HighlightCommand], idx: int) -> Optional[FilePosition]:
+def searchAnnotation(anns: List[HighlightCommand], idx: int) -> Optional[OCFilePosition]:
     """Search for an annotation covering the given byte index.
     Assumes anns is sorted in ascending order by from_ field.
     """
