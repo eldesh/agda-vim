@@ -4,7 +4,7 @@ from typing import List, Optional
 from dataclasses import dataclass
 import logging
 
-from .response.filepos import FilePosition, Origin1, UnitChar
+from .response.filepos import OCFilePosition
 
 logger = logging.getLogger(__name__)
 
@@ -37,14 +37,14 @@ class HighlightCommand:
         aspects (List[str]): List of aspect names associated with the annotation.
         token_based (Optional[Union[bool, Nil]]): Optional token-based flag (True or nil).
         info (Optional[Union[str, Nil]]): Optional information string or nil.
-        filepos (Optional[FilePosition[Origin1, UnitChar]]): Optional file position (1-origin, character-based).
+        filepos (Optional[OCFilePosition]): Optional file position (1-origin, character-based).
     """
     _from: int
     _to: int
     _aspects: List[str]
     _token_based: bool
     _info: Optional[str]
-    _filepos: Optional[FilePosition[Origin1, UnitChar]]
+    _filepos: Optional[OCFilePosition]
 
     def __str__(self):
         aspects = '(' + ' '.join(self._aspects) + ')'
@@ -80,7 +80,7 @@ class HighlightCommand:
         return self._info
 
     @property
-    def filepos(self) -> Optional[FilePosition[Origin1, UnitChar]]:
+    def filepos(self) -> Optional[OCFilePosition]:
         return self._filepos
 
 
