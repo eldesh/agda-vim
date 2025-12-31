@@ -21,6 +21,5 @@ __all__ = [
     "MakeCaseActionResponse",
     "MakeCaseActionExtendlamResponse",
     "SolveAllActionResponse",
-    "MaybeGotoResponse",
-    "FilePosition"
+    "MaybeGotoResponse"
 ]
