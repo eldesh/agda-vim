@@ -7,18 +7,12 @@ GroundType = Union[None, bool, int, float, str, List['GroundType']]
 
 
 def bindeval(expr: str) -> Any:
-    if hasattr(vim, "bindeval", None):
-        return vim.bindeval(expr)
-    else:
-        return vim.eval(expr)
+    return vim.bindeval(expr)
 
 
 def Function(name: str) -> Callable[..., Any]:
     """Get a Vim function by name."""
-    if callable(getattr(vim, "Function", None)):
-        return vim.Function(name)
-    else:
-        return vim.bindeval("function('%s')" % name)
+    return vim.Function(name)
 
 
 def command(cmd: str) -> None:
