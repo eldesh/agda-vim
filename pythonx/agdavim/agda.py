@@ -239,7 +239,7 @@ def gotoAnnotation():
         vim.command('buffer %s' % targetBuffer.number)
     vim.command('%dgo' % filepos.pos)
 
-def interpretResponse(responses, quiet = False):
+def interpretResponse(responses: Iterator[response.Response], quiet: bool = False):
     global agda
     for response in responses:
         logger.debug('response: %s' % response)
@@ -248,8 +248,8 @@ def interpretResponse(responses, quiet = False):
             strings = [response.name, response.text]
             if strings[0] == '*Agda Version*':
                 agda_mode_version = AgdaVersion.parse(strings[1])
-                logger.debug('AgdaVersion: mode(%s) executable(%s)' % (agda_mode_version, agda.version))
-                if agda.version != agda_mode_version:
+                logger.debug('AgdaVersion: mode(%s) executable(%s)' % (agda_mode_version, agda.version if agda is not None else 'None'))
+                if agda and agda.version != agda_mode_version:
                     logger.error('Agda mode\'s version (%s) does not match that of %s (%s)'
                                  % (agda_mode_version, agda.path, agda.version))
             if quiet: continue
@@ -353,7 +353,7 @@ def sendCommandLoad(file: str, quiet: bool):
 #        return None
 #    return line[start:end]
 
-def replaceHole(replacement):
+def replaceHole(replacement: str):
     logger.debug('replacement: %s' % replacement)
     rep = replacement.replace('\n', ' ').replace('    ', ';') # TODO: This probably needs to be handled better
     (r, c) = vim.current.window.cursor

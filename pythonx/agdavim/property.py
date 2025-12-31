@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Mapping, Union
+from typing import Mapping
 from enum import Enum, auto, unique
 
 from .vimapi import GroundType
