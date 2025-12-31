@@ -128,16 +128,16 @@ class OBPoint(Point[Origin1, UnitByte]):
     ORIGIN = 1
 
 
-class ZCFilePos(FilePosition[Origin0, UnitChar]):
+class ZCFilePosition(FilePosition[Origin0, UnitChar]):
     ORIGIN = 0
 
-class OCFilePos(FilePosition[Origin1, UnitChar]):
+class OCFilePosition(FilePosition[Origin1, UnitChar]):
     ORIGIN = 1
 
-class ZBFilePos(FilePosition[Origin0, UnitByte]):
+class ZBFilePosition(FilePosition[Origin0, UnitByte]):
     ORIGIN = 0
 
-class OBFilePos(FilePosition[Origin1, UnitByte]):
+class OBFilePosition(FilePosition[Origin1, UnitByte]):
     ORIGIN = 1
 
 
