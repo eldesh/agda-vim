@@ -172,6 +172,8 @@ def findGoal(row: int, col: int) -> Optional[int]:
 
 
 def getOutput() -> Iterator[response.Response]:
+    if agda is None:
+        return
     line = agda.stdout.readline()
     if not line.startswith(AGDA2_OUTPUT_PROMPT):
         logger.warning("Unexpected Agda output: not startswith %s: %s" % (AGDA2_OUTPUT_PROMPT, line))

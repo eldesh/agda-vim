@@ -1,5 +1,7 @@
+from __future__ import annotations
 import subprocess
 import logging
+from typing import IO
 
 from .agda_version import AgdaVersion
 
@@ -13,11 +15,11 @@ class AgdaProcess:
         _path (str): The file path to the Agda executable.
         _version (AgdaVersion): The version of the Agda process.
     """
-    _process: subprocess.Popen
+    _process: subprocess.Popen[str]
     _path: str
     _version: AgdaVersion
 
-    def __init__(self, path: str) -> 'AgdaProcess':
+    def __init__(self, path: str):
         self._path = path
         self._process = subprocess.Popen(
             [self._path, "--interaction"],
@@ -42,14 +44,16 @@ class AgdaProcess:
         return self._version
 
     @property
-    def stdin(self):
+    def stdin(self) -> IO[str]:
+        assert self._process.stdin is not None
         return self._process.stdin
 
     @property
-    def stdout(self):
+    def stdout(self) -> IO[str]:
+        assert self._process.stdout is not None
         return self._process.stdout
 
-    def restart(self, path):
+    def restart(self, path: str):
         '''Terminates the current Agda process and starts a new one located at `path`.'''
         self.stop_wait()
         AgdaProcess.__init__(self, path)
@@ -63,6 +67,3 @@ class AgdaProcess:
             logger.error("Agda process did not exit in time, killing it.")
             self._process.kill()
             self._process.wait()
-        self._process = None
-        self._path = None
-        self._version = None
