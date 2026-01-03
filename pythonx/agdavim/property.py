@@ -1,3 +1,4 @@
+from __future__ import annotations
 from dataclasses import dataclass
 from typing import Mapping
 from enum import Enum, auto, unique
@@ -19,7 +20,7 @@ class PropertyId:
     def __repr__(self) -> str:
         return 'PropertyId(%s)' % self._val
 
-    def __add__(self, other: int) -> 'PropertyId':
+    def __add__(self, other: int) -> PropertyId:
         return PropertyId(self._val + other)
 
 
@@ -32,12 +33,14 @@ class PropertyKey(Enum):
 PropertyValue = GroundType
 
 
-@dataclass(eq=True, order=True, slots=True)
+@dataclass(order=True, frozen=True, slots=True)
 class AgdaProperty:
+    _id: PropertyId
     _prop: Mapping[PropertyKey, PropertyValue]
     
-    def __init__(self, prop: Mapping[PropertyKey, PropertyValue]) -> None:
-        self._prop = prop
+    @property
+    def id(self) -> PropertyId:
+        return self._id
 
     def __getitem__(self, key: PropertyKey) -> PropertyValue:
         return self._prop[key]
