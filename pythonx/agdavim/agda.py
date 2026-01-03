@@ -75,13 +75,13 @@ def find_goals_from_current_buffer(goals: List[int]) -> Iterator[AgdaGoal]:
             logger.debug("found pattern %s at %d:%d" % (m.group(), row, m.start()))
             if m.group() == "?":
                 col0 = m.start()
-                vim.current.buffer[row-1] = line[:col0] + "{!!}" + line[col0+1:]
-                yield AgdaGoal(buffer.number, GoalNumber(goals.pop(0)), vim.current.buffer[row-1][col0:col0+4], OBPoint(row, col0+1), OBPoint(row, col0+1+4))
+                buffer[row-1] = line[:col0] + "{!!}" + line[col0+1:]
+                yield AgdaGoal(buffer.number, GoalNumber(goals.pop(0)), buffer[row-1][col0:col0+4], OBPoint(row, col0+1), OBPoint(row, col0+1+4-1))
             elif m.group() == "{!":
                 hend = line.find("!}", m.end())
                 if hend != -1:
                     col0 = m.start()
-                    yield AgdaGoal(buffer.number, GoalNumber(goals.pop(0)), line[col0:hend+2], OBPoint(row, col0+1), OBPoint(row, hend+1+2))
+                    yield AgdaGoal(buffer.number, GoalNumber(goals.pop(0)), line[col0:hend+2], OBPoint(row, col0+1), OBPoint(row, hend+1+2-1))
 
 
 def forget_all_goal_properties():
@@ -111,7 +111,7 @@ def goal_action(goalList: List[int]):
             logger.debug("goal action: %s" % goal)
             pos = goal.pos_start
             prop_id = gen_property_id()
-            length = goal.pos_end.col - goal.pos_start.col
+            length = goal.pos_end.col - goal.pos_start.col + 1
             prop = AgdaProperty({ PropertyKey.GOAL_NUMBER: goal.num, PropertyKey.VIRTUAL_TXT: "%s" % goal.num })
             prop_add(pos.row, pos.col       , {'type': 'agdavim:agdaHole', 'id': prop_id.get(), 'length': length})
             prop_add(pos.row, pos.col+length, {'type': 'agdavim:agdaHoleNumber', 'text': prop[PropertyKey.VIRTUAL_TXT] })
