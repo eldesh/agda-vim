@@ -14,7 +14,7 @@ from .response import InfoActionResponse, InfoActionAndCopyResponse, GoalsAction
 from .response import sexpr
 from .vimfunc import vim_func, vim_bool, vim_int_range, vim_normalise, vim_compute_mode, vim_normalise_asis
 from .property import AgdaProperty, PropertyId, PropertyKey
-from .vimapi import prop_add, prop_remove, prop_list, prop_find
+from .vimapi import prop_add, prop_remove, prop_list, prop_find, current_position
 from . import vimapi
 from .response.filepos import OBPoint, OCFilePosition, OBRange
 from .protocol import NormaliseType, ComputeMode
@@ -282,14 +282,7 @@ def interpretResponse(responses: Iterator[response.Response], quiet: bool = Fals
             break
 
         elif isinstance(response, MakeCaseActionResponse):
-            newcls = [ cls.replace("?", "{!   !}") for cls in response.newcls ] # this probably isn't safe
-            cases = newcls
-            row = vim.current.window.cursor[0]
-            prefix = re.match(r'[ \t]*', vim.current.line).group()
-            vim.current.buffer[row-1:row] = [prefix + case for case in cases]
-            f = vim.current.buffer.name
-            sendCommandLoad(f, quiet)
-            break
+            handle_make_case_action(response.priority, response.newcls, quiet)
 
         elif isinstance(response, GiveActionResponse):
             giveResult = GiveString(response.giveResult.text.replace("?", "{!   !}")) \
@@ -332,6 +325,20 @@ def sendCommandLoad(file: str, quiet: bool):
 #    except AttributeError as e:
 #        return None
 #    return line[start:end]
+
+
+def handle_make_case_action(priority: Optional[int], newcls: List[str], quiet: bool):
+    pos = current_position()
+    logger.debug('handle_make_case_action: newcls: %s' % newcls)
+    # overwrite the current line with the first case, and insert the rest after it.
+    vim.current.buffer[pos.row-1] = newcls.pop(0)
+    vim.current.buffer.append(newcls, pos.row)
+
+    vim.command('silent! update')
+    for row in range(1, len(newcls)+1):
+        logger.debug('handle_make_case_action: %s' % vim.current.buffer[pos.row-1+row])
+    sendCommandLoad(vim.current.buffer.name, quiet)
+
 
 def replaceHole(replacement: str):
     logger.debug('replacement: %s' % replacement)

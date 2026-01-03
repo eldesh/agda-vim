@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Any, Callable, Union, overload, Optional, List
 
 import vim
+from .response.filepos import OCPoint
 
 GroundType = Union[None, bool, int, float, str, List['GroundType']]
 
@@ -79,3 +80,6 @@ def inputsave() -> int:
 def inputrestore() -> int:
     return inputrestore_()
 
+def current_position() -> OCPoint:
+    row, col = vim.current.window.cursor
+    return OCPoint(row, col)
