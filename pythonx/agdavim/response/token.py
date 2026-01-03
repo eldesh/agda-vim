@@ -43,7 +43,7 @@ class TokenString:
     @property
     def kind(self) -> TokenKind:
         return self._kind
-    
+
     @property
     def value(self) -> str:
         return self._value
