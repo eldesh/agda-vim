@@ -311,6 +311,10 @@ def sendCommandLoadHighlightInfo(file: str, quiet: bool):
     sendCommand('Cmd_load_highlighting_info %s' % escape(file), highlight = True, quiet = quiet)
 
 def sendCommandLoad(file: str, quiet: bool):
+    assert agda is not None, "Agda process is not started"
+
+    logger.debug("sendCommandLoad: agda process is restarting: %s", agda.path)
+    agda.restart(agda.path)
     if agda.version < AgdaVersion(2,5,0,0): # in 2.5 they changed it so Cmd_load takes commandline arguments
         incpaths = (path.decode('utf-8') for path in vim.vars['agdavim_agda_includepathlist'])
     else:
