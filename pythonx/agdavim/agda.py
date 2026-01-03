@@ -10,7 +10,7 @@ from .agda_goal import AgdaGoal, GoalNumber
 from .command import HighlightLevel, Remove as HighlightRemove, HighlightCommand
 from . import log
 from . import response
-from .response import InfoActionResponse, InfoActionAndCopyResponse, GoalsActionResponse, GiveActionResponse, MakeCaseActionResponse, MakeCaseActionExtendlamResponse, HighlightAddAnnotationsResponse, GiveString, RemoveTokenBasedHighlighting
+from .response import InfoActionResponse, InfoActionAndCopyResponse, GoalsActionResponse, GiveActionResponse, MakeCaseActionResponse, MakeCaseActionExtendlamResponse, HighlightAddAnnotationsResponse, GiveString, RemoveTokenBasedHighlighting, GiveResult, GiveParen, GiveNoParen, InteractionId
 from .response import sexpr
 from .vimfunc import vim_func, vim_bool, vim_int_range, vim_normalise, vim_compute_mode, vim_normalise_asis
 from .property import AgdaProperty, PropertyId, PropertyKey
@@ -285,9 +285,7 @@ def interpretResponse(responses: Iterator[response.Response], quiet: bool = Fals
             handle_make_case_action(response.priority, response.newcls, quiet)
 
         elif isinstance(response, GiveActionResponse):
-            giveResult = GiveString(response.giveResult.text.replace("?", "{!   !}")) \
-                if isinstance(response.giveResult, GiveString) else response.giveResult
-            replaceHole(unescape("%s" % giveResult))
+            handle_give_action(response.interactionId, response.giveResult)
 
         # elif response.startswith('(agda2-highlight-clear)'):
             # pass # Maybe do something with this.
@@ -327,6 +325,37 @@ def sendCommandLoad(file: str, quiet: bool):
 #    return line[start:end]
 
 
+def handle_give_action(interaction_id: InteractionId, action: GiveResult):
+    goalnum = GoalNumber(interaction_id.id)
+    rng = range_of_goal(goalnum)
+    if rng is None:
+        logger.error('handle_give_action: no goal at current position')
+        return
+
+    line = vim.current.line
+    logger.debug('handle_give_action: goal: %d%s action: %s' % (goalnum, rng, action))
+    start = rng.start.to_zero_origin()
+    end   = rng.end.to_zero_origin()
+    if isinstance(action, GiveString):
+        logger.debug('GiveString: line[:start.col]: %s' % line[:start.col])
+        logger.debug('GiveString: line[end.col+2:]: %s' % line[end.col+2:])
+        vim.current.line = line[:start.col] + action.text + line[end.col+2:]
+        logger.debug('GiveString: line: %s' % vim.current.line)
+
+    elif isinstance(action, GiveParen):
+        logger.debug('GiveParen: line[:start.col]: %s' % line[:start.col])
+        logger.debug('GiveParen: line[end.col+2:]: %s' % line[end.col+2:])
+        vim.current.line = line[:start.col] + "(" + line[start.col+2:end.col-2+1] + ")" + line[end.col+1:]
+        logger.debug('GiveParen: line: %s' % vim.current.line)
+
+    else:
+        assert isinstance(action, GiveNoParen)
+        logger.debug('GiveNoParen: line[:start.col]: %s' % line[:start.col])
+        logger.debug('GiveNoParen: line[end.col+2:]: %s' % line[end.col+2:])
+        vim.current.line = line[:start.col] + line[start.col+2:end.col-2+1] + line[end.col+1:]
+        logger.debug('GiveNoParen: line: %s' % vim.current.line)
+
+
 def handle_make_case_action(priority: Optional[int], newcls: List[str], quiet: bool):
     pos = current_position()
     logger.debug('handle_make_case_action: newcls: %s' % newcls)
@@ -338,27 +367,6 @@ def handle_make_case_action(priority: Optional[int], newcls: List[str], quiet: b
     for row in range(1, len(newcls)+1):
         logger.debug('handle_make_case_action: %s' % vim.current.buffer[pos.row-1+row])
     sendCommandLoad(vim.current.buffer.name, quiet)
-
-
-def replaceHole(replacement: str):
-    logger.debug('replacement: %s' % replacement)
-    rep = replacement.replace('\n', ' ').replace('    ', ';') # TODO: This probably needs to be handled better
-    (r, c) = vim.current.window.cursor
-    line = vim.current.line
-    line_bytes = line.encode('utf-8')
-    c_str = len(line_bytes[:c].decode('utf-8'))
-    if line_bytes[c] == ord("?"):
-        start = c
-        end = c+1
-    else:
-        try:
-            mo = None
-            for mo in re.finditer(r"{!", line[:min(len(line),c_str+2)]): pass
-            start = mo.start()
-            end = re.search(r"!}", line[max(0,c_str-1):]).end() + max(0,c_str-1)
-        except AttributeError:
-            return
-    vim.current.line = line[:start] + rep + line[end:]
 
 
 def getHoleBodyAtCursor() -> Optional[Tuple[str, Optional[int]]]:
