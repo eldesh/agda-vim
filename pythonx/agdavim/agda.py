@@ -123,9 +123,12 @@ def handle_goal_action(goalList: List[int]):
             prop_id = gen_property_id()
             prop = AgdaProperty(prop_id, { PropertyKey.GOAL_NUMBER: goal.num, PropertyKey.VIRTUAL_TXT: "%s" % goal.num })
             goal_prop_map[goal.num] = prop
-            prop_add(pos.row, pos.col         , {'type': 'agdavim:agdaHole', 'id': prop_id.get(), 'end_col': goal.pos_end.col })
-            prop_add(pos.row, goal.pos_end.col, {'type': 'agdavim:agdaHoleNumber', 'text': prop[PropertyKey.VIRTUAL_TXT] })
             id_property_map[prop_id] = goal
+            # {!       ..       !}
+            # ^_ pos_start.col   ^_ pos_end.col
+            #                     ^_ goal-number
+            prop_add(pos.row, pos.col           , {'type': 'agdavim:agdaHole', 'id': prop_id.get(), 'end_col': goal.pos_end.col })
+            prop_add(pos.row, goal.pos_end.col+1, {'type': 'agdavim:agdaHoleNumber', 'text': prop[PropertyKey.VIRTUAL_TXT] })
         else:
             logger.error("unexpected goal: %s" % goal)
 
