@@ -42,7 +42,11 @@ class Point(Generic[O, U]):
         return self._col
 
     def __str__(self) -> str:
-        return "(%d, %d)" % (self.row, self.col)
+        if self.ORIGIN == 0:
+            return "(%d, %d)\u2080" % (self.row, self.col)
+        if self.ORIGIN == 1:
+            return "(%d, %d)\u2081" % (self.row, self.col)
+        assert False, "unreachable"
 
     def to_zero_origin(self) -> Point[Origin0, U]:
         if self.ORIGIN == 0:
@@ -55,6 +59,45 @@ class Point(Generic[O, U]):
             return self  # type: ignore[return-value]
         else:
             return Point[Origin1, U](self.row + 1, self.col + 1)
+
+
+@dataclass(order=True, frozen=True, slots=True)
+class Range(Generic[O, U]):
+    """Represents a range in a buffer with start and end points.
+    
+    Represents a range in a buffer with start and end points with closed interval.
+
+    Type parameters:
+    - O indicates the origin of the offset (e.g., Origin0 or Origin1).
+    - U indicates the unit of the offset (e.g., UnitByte or UnitChar).
+    """
+
+    ORIGIN: ClassVar[int]
+    _start: Point[O, U]
+    _end: Point[O, U]
+
+    @property
+    def start(self) -> Point[O, U]:
+        return self._start
+
+    @property
+    def end(self) -> Point[O, U]:
+        return self._end
+
+    def __str__(self) -> str:
+        return "[%s,%s]" % (self.start, self.end)
+
+    def to_zero_origin(self) -> Range[Origin0, U]:
+        if self.ORIGIN == 0:
+            return self  # type: ignore[return-value]
+        else:
+            return Range[Origin0, U](self.start.to_zero_origin(), self.end.to_zero_origin())
+
+    def to_one_origin(self) -> Range[Origin1, U]:
+        if self.ORIGIN == 1:
+            return self  # type: ignore[return-value]
+        else:
+            return Range[Origin1, U](self.start.to_one_origin(), self.end.to_one_origin())
 
 
 @dataclass(order=True, frozen=True, slots=True)
@@ -114,18 +157,50 @@ class FilePoint(Generic[O, U]):
     def col(self) -> int:
         return self._point.col
 
+    def __str__(self):
+        return '%s:%s' % (self._file, self._point)
+
 
 class ZCPoint(Point[Origin0, UnitChar]):
     ORIGIN = 0
+    def to_one_origin(self) -> OCPoint:
+        return OCPoint(self.row + 1, self.col + 1)
 
 class OCPoint(Point[Origin1, UnitChar]):
     ORIGIN = 1
+    def to_zero_origin(self) -> ZCPoint:
+        return ZCPoint(self.row - 1, self.col - 1)
 
 class ZBPoint(Point[Origin0, UnitByte]):
     ORIGIN = 0
+    def to_one_origin(self) -> OBPoint:
+        return OBPoint(self.row + 1, self.col + 1)
 
 class OBPoint(Point[Origin1, UnitByte]):
     ORIGIN = 1
+    def to_zero_origin(self) -> ZBPoint:
+        return ZBPoint(self.row - 1, self.col - 1)
+
+
+class ZCRange(Range[Origin0, UnitChar]):
+    ORIGIN = 0
+    def to_one_origin(self) -> OCRange:
+        return OCRange(self.start.to_one_origin(), self.end.to_one_origin())
+
+class OCRange(Range[Origin1, UnitChar]):
+    ORIGIN = 1
+    def to_zero_origin(self) -> ZCRange:
+        return ZCRange(self.start.to_zero_origin(), self.end.to_zero_origin())
+
+class ZBRange(Range[Origin0, UnitByte]):
+    ORIGIN = 0
+    def to_one_origin(self) -> OBRange:
+        return OBRange(self.start.to_one_origin(), self.end.to_one_origin())
+
+class OBRange(Range[Origin1, UnitByte]):
+    ORIGIN = 1
+    def to_zero_origin(self) -> ZBRange:
+        return ZBRange(self.start.to_zero_origin(), self.end.to_zero_origin())
 
 
 class ZCFilePosition(FilePosition[Origin0, UnitChar]):
