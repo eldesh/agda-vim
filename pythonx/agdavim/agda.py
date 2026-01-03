@@ -2,7 +2,6 @@ import vim
 import re
 import logging
 from typing import Iterator, List, Optional, MutableMapping, Tuple
-from dataclasses import dataclass
 
 from .agda_path import escape, unescape, agda2_quote_list
 from .agda_process import AgdaProcess
@@ -15,9 +14,9 @@ from .response import InfoActionResponse, InfoActionAndCopyResponse, GoalsAction
 from .response import sexpr
 from .vimfunc import vim_func, vim_bool, vim_int_range, vim_normalise, vim_compute_mode, vim_normalise_asis
 from .property import AgdaProperty, PropertyId, PropertyKey
-from .vimapi import prop_add, prop_remove, prop_list
+from .vimapi import prop_add, prop_remove, prop_list, prop_find
 from . import vimapi
-from .response.filepos import OBPoint, OCFilePosition
+from .response.filepos import OBPoint, OCFilePosition, OBRange
 from .protocol import NormaliseType, ComputeMode
 
 
@@ -30,11 +29,11 @@ AGDA2_OUTPUT_PROMPT: str = "Agda2> "
 # TODO: I'm pretty sure this will start an agda process per buffer which is less than desirable...
 agda = None
 
-agda_goal_set: set[AgdaGoal] = set([])
-
 annotations = []
 
-id_property_map: MutableMapping[PropertyId, AgdaProperty] = {}
+goal_prop_map: MutableMapping[GoalNumber, AgdaProperty] = {}
+
+id_property_map: MutableMapping[PropertyId, AgdaGoal] = {}
 
 property_id_ctx: int = 0
 
@@ -43,6 +42,17 @@ def gen_property_id() -> PropertyId:
     global property_id_ctx
     property_id_ctx += 1
     return PropertyId(property_id_ctx)
+
+
+def range_of_goal(goalnum: int) -> Optional[OBRange]:
+    prop = goal_prop_map.get(GoalNumber(goalnum))
+    if prop is None:
+        return None
+
+    vimprop = prop_find({ 'type': 'agdavim:agdaHole', 'id': prop.id.get() })
+    start = OBPoint(int(vimprop['lnum']), int(vimprop['col']))
+    end   = OBPoint(int(vimprop['lnum']), start.col + int(vimprop['length']) - 1)
+    return OBRange(start, end)
 
 
 def highlight_cmds_from_response(resp: HighlightAddAnnotationsResponse) -> Iterator[HighlightCommand]:
@@ -85,37 +95,37 @@ def find_goals_from_current_buffer(goals: List[int]) -> Iterator[AgdaGoal]:
 
 
 def forget_all_goal_properties():
-    global agda_goal_set
+    global goal_prop_map
     global id_property_map
 
-    agda_goal_set.clear()
+    goal_prop_map.clear()
     for lnum in range(1, len(vim.current.buffer)+1): # 1-origin
         for prop in prop_list(lnum, { 'types': ['agdavim:agdaHole'] }):
             logger.debug("delete: prop: %s" % prop)
+            assert isinstance(prop["id"], int)
             del id_property_map[PropertyId(int(prop["id"]))]
 
     prop_remove({ 'type': 'agdavim:agdaHole', 'all': True })
     prop_remove({ 'type': 'agdavim:agdaHoleNumber', 'all': True })
 
 
-def goal_action(goalList: List[int]):
-    global agda_goal_set
+def handle_goal_action(goalList: List[int]):
+    global goal_prop_map
     global id_property_map
 
     logger.debug("goal_action(%s)" % goalList)
     vimapi.command('syn sync fromstart') # TODO: This should become obsolete given good sync rules in the syntax file.
     forget_all_goal_properties()
     for goal in find_goals_from_current_buffer(goalList):
-        agda_goal_set.add(goal)
         if goal.contents.startswith("{!") and goal.contents.endswith("!}"):
             logger.debug("goal action: %s" % goal)
             pos = goal.pos_start
             prop_id = gen_property_id()
-            length = goal.pos_end.col - goal.pos_start.col + 1
-            prop = AgdaProperty({ PropertyKey.GOAL_NUMBER: goal.num, PropertyKey.VIRTUAL_TXT: "%s" % goal.num })
-            prop_add(pos.row, pos.col       , {'type': 'agdavim:agdaHole', 'id': prop_id.get(), 'length': length})
-            prop_add(pos.row, pos.col+length, {'type': 'agdavim:agdaHoleNumber', 'text': prop[PropertyKey.VIRTUAL_TXT] })
-            id_property_map[prop_id] = prop
+            prop = AgdaProperty(prop_id, { PropertyKey.GOAL_NUMBER: goal.num, PropertyKey.VIRTUAL_TXT: "%s" % goal.num })
+            goal_prop_map[goal.num] = prop
+            prop_add(pos.row, pos.col         , {'type': 'agdavim:agdaHole', 'id': prop_id.get(), 'end_col': goal.pos_end.col })
+            prop_add(pos.row, goal.pos_end.col, {'type': 'agdavim:agdaHoleNumber', 'text': prop[PropertyKey.VIRTUAL_TXT] })
+            id_property_map[prop_id] = goal
         else:
             logger.error("unexpected goal: %s" % goal)
 
@@ -123,12 +133,12 @@ def goal_action(goalList: List[int]):
 
 
 def findGoal(row: int, col: int) -> Optional[int]:
-    for item in agda_goal_set:
+    for item in id_property_map.values():
         logger.debug('find goal: %s' % item)
         if item.pos_start == OBPoint(row, col):
             logger.debug('findGoal (found) in %s: (%d,%d)' % (item, row, col))
             return item.num
-    logger.debug('findGoal (not found) in %s: (%d,%d)' % (agda_goal_set, row, col))
+    logger.debug('findGoal (not found) in %s: (%d,%d)' % (id_property_map, row, col))
     return None
 
 
@@ -226,7 +236,7 @@ def interpretResponse(responses: Iterator[response.Response], quiet: bool = Fals
             vim.command('call s:LogAgda("%s","%s",%s)' % (strings[0], strings[1], 'v:true' if response.append else 'v:false'))
 
         elif isinstance(response, GoalsActionResponse):
-            goal_action(response.goals)
+            handle_goal_action(response.goals)
 
         elif isinstance(response, MakeCaseActionExtendlamResponse):
             newcls = [ cls.replace("?", "{!   !}") for cls in response.newcls ] # this probably isn't safe
