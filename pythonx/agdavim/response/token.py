@@ -29,10 +29,10 @@ class TokenSymbol:
         return self._value
 
     def __repr__(self):
-        return f"Token(%r, %r)" % (self._kind, self._value)
+        return "Token(%r, %r)" % (self._kind, self._value)
 
     def __str__(self):
-        return f"'%s'" % self._kind.name
+        return "%s" % self._kind.name
 
 
 @dataclass(eq=True, order=True, frozen=True)
@@ -49,10 +49,10 @@ class TokenString:
         return self._value
 
     def __repr__(self):
-        return f"Token(%r, %r)" % (self._kind, self._value)
+        return "Token(%r, %r)" % (self._kind, self._value)
 
     def __str__(self):
-        return f"Token(%s, %s)" % (self._kind.name, self._value)
+        return "\"%s\"" % self._value
 
 
 @dataclass(eq=True, order=True, frozen=True)
@@ -69,10 +69,10 @@ class TokenAtom:
         return self._value
 
     def __repr__(self):
-        return f"Token(%r, %r)" % (self._kind, self._value)
+        return "Token(%r, %r)" % (self._kind, self._value)
 
     def __str__(self):
-        return f"Token(%s, %s)" % (self._kind.name, self._value)
+        return "%s" % self._value
 
 
 Token = Union[TokenSymbol, TokenString, TokenAtom]
