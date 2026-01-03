@@ -7,6 +7,7 @@ import logging
 
 fake_vim = types.ModuleType("vim")
 fake_vim.command = lambda x: ()
+fake_vim.Function = lambda x: lambda *args: None
 sys.modules["vim"] = fake_vim
 fake_vimapi = types.ModuleType("vimapi")
 sys.modules["vimapi"] = fake_vimapi
