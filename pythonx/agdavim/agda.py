@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from .agda_path import escape, unescape, agda2_quote_list
 from .agda_process import AgdaProcess
 from .agda_version import AgdaVersion
+from .agda_goal import AgdaGoal, GoalNumber
 from .command import HighlightLevel, Remove as HighlightRemove, HighlightCommand
 from . import log
 from . import response
@@ -25,51 +26,11 @@ logger = logging.getLogger(__name__)
 AGDA2_OUTPUT_PROMPT: str = "Agda2> "
 
 
-@dataclass(order=True, frozen=True, slots=True)
-class Goal:
-    """ Represents a goal in the buffer.
-
-    _buf: (int) Buffer number.
-    _num: (int) Goal number.
-    _pos: (Point) Position of the goal in the buffer. (1-origin, byte unit)
-    """
-
-    _buf: int
-    _num: int
-    _contents: str
-    _pos_start: OBPoint
-    _pos_end: OBPoint # _pos_start <= _pos_end
-
-    @property
-    def buf(self) -> int:
-        return self._buf
-
-    @property
-    def num(self) -> int:
-        return self._num
-
-    @property
-    def contents(self) -> str:
-        return self._contents
-
-    @property
-    def pos_start(self) -> OBPoint:
-        return self._pos_start
-
-    @property
-    def pos_end(self) -> OBPoint:
-        return self._pos_end
-
-    def __str__(self) -> str:
-        return "Goal(buf[%d]: %s@%d, %s..%s)" % (self.buf, self.contents, self.num, self.pos_start, self.pos_end)
-
-
-
 # start Agda
 # TODO: I'm pretty sure this will start an agda process per buffer which is less than desirable...
 agda = None
 
-agda_goal_set: set[Goal] = set([])
+agda_goal_set: set[AgdaGoal] = set([])
 
 annotations = []
 
@@ -99,7 +60,7 @@ def promptUser(prompt: str) -> str:
     return input
 
 
-def find_goals_from_current_buffer(goals: List[int]) -> Iterator[Goal]:
+def find_goals_from_current_buffer(goals: List[int]) -> Iterator[AgdaGoal]:
     """Find goals in the current buffer.
 
     Yields:
@@ -115,12 +76,12 @@ def find_goals_from_current_buffer(goals: List[int]) -> Iterator[Goal]:
             if m.group() == "?":
                 col0 = m.start()
                 vim.current.buffer[row-1] = line[:col0] + "{!!}" + line[col0+1:]
-                yield Goal(buffer.number, goals.pop(0), vim.current.buffer[row-1][col0:col0+4], OBPoint(row, col0+1), OBPoint(row, col0+1+4))
+                yield AgdaGoal(buffer.number, GoalNumber(goals.pop(0)), vim.current.buffer[row-1][col0:col0+4], OBPoint(row, col0+1), OBPoint(row, col0+1+4))
             elif m.group() == "{!":
                 hend = line.find("!}", m.end())
                 if hend != -1:
                     col0 = m.start()
-                    yield Goal(buffer.number, goals.pop(0), line[col0:hend+2], OBPoint(row, col0+1), OBPoint(row, hend+1+2))
+                    yield AgdaGoal(buffer.number, GoalNumber(goals.pop(0)), line[col0:hend+2], OBPoint(row, col0+1), OBPoint(row, hend+1+2))
 
 
 def forget_all_goal_properties():
