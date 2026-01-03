@@ -1,7 +1,9 @@
 from __future__ import annotations
 import subprocess
 import logging
-from typing import IO
+from typing import TextIO, IO, BinaryIO
+from selectors import DefaultSelector
+import selectors
 
 from .agda_version import AgdaVersion
 
@@ -16,6 +18,7 @@ class AgdaProcess:
         _version (AgdaVersion): The version of the Agda process.
     """
     _process: subprocess.Popen[str]
+    _selector: DefaultSelector
     _path: str
     _version: AgdaVersion
 
@@ -28,12 +31,23 @@ class AgdaProcess:
             stdout = subprocess.PIPE,
             universal_newlines = True
         )
+        assert self._process.stdout is not None, "Agda process stdout is None"
+        assert self._process.stdin is not None, "Agda process stdin is None"
+        self._selector = DefaultSelector()
+        self._selector.register(self._process.stdout.fileno(), selectors.EVENT_READ)
         self._version = AgdaVersion.parse(subprocess.run(
             [self._path, '--version'],
             capture_output=True,
             text=True,
             check=True
         ).stdout.strip())
+
+    def is_running(self) -> bool:
+        return self._process.poll() is None
+
+    @property
+    def selector(self) -> DefaultSelector:
+        return self._selector
 
     @property
     def path(self) -> str:
@@ -53,9 +67,16 @@ class AgdaProcess:
         assert self._process.stdout is not None
         return self._process.stdout
 
+    def close_io(self):
+        assert self._process.stdin is not None
+        assert self._process.stdout is not None
+        self._process.stdin.close()
+        self._process.stdout.close()
+
     def restart(self, path: str):
         '''Terminates the current Agda process and starts a new one located at `path`.'''
         self.stop_wait()
+        self.close_io()
         AgdaProcess.__init__(self, path)
 
     def stop_wait(self):

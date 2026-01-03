@@ -135,7 +135,11 @@ def findGoal(row: int, col: int) -> Optional[int]:
 def getOutput() -> Iterator[response.Response]:
     if agda is None:
         return
-    line = agda.stdout.readline()
+
+    # To avoid the effects of agda process being restarted within other function, bind it in advance.
+    agda_stdout = agda.stdout
+
+    line = agda_stdout.readline()
     if not line.startswith(AGDA2_OUTPUT_PROMPT):
         logger.warning("Unexpected Agda output: not startswith %s: %s" % (AGDA2_OUTPUT_PROMPT, line))
     else:
@@ -143,7 +147,10 @@ def getOutput() -> Iterator[response.Response]:
 
     while not line.startswith('Agda2> cannot read') and line != "":
         yield response.parse_response(line)
-        line = agda.stdout.readline()
+        if not agda_stdout.closed:
+            line = agda_stdout.readline()
+        else:
+            break
 
 
 # This is not very efficient presumably.
