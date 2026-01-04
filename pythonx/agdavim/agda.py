@@ -81,6 +81,8 @@ def find_goals_from_current_buffer(goals: List[int]) -> Iterator[AgdaGoal]:
 
     buffer = vim.current.buffer
     for row, line in enumerate(buffer, start=1):
+        if not goals:
+            break
         for m in pattern.finditer(line):
             logger.debug("found pattern %s at %d:%d" % (m.group(), row, m.start()))
             if m.group() == "?":
