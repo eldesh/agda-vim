@@ -21,10 +21,6 @@ function! AgdaReloadSyntax()
 endfunction
 call AgdaReloadSyntax()
 
-function! AgdaLoad(quiet)
-    " Do nothing.  Overidden below with a Python function if python is supported.
-endfunction
-
 autocmd QuickfixCmdPost make call AgdaReloadSyntax()|call AgdaShowVersion(v:true)|call AgdaLoad(v:true)
 
 setlocal autowrite
