@@ -77,7 +77,7 @@ def find_goals_from_current_buffer(goals: List[int]) -> Iterator[AgdaGoal]:
         Goal objects found in the current buffer.
         '?' is replaced with '{!!}'.
     """
-    pattern = re.compile("\\?|{[-!]|[-!]}|--|^%.*\\\\begin{code}|\\\\begin{code}|\\\\end{code}|```|#\\+begin_src agda2|#\\+end_src agda2")
+    pattern = re.compile(r"\?|{[-!]|[-!]}|--|^%.*\\begin{code}|\\begin{code}|\\end{code}|```|#\+begin_src agda2|#\+end_src agda2")
 
     buffer = vim.current.buffer
     for row, line in enumerate(buffer, start=1):
