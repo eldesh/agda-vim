@@ -123,7 +123,7 @@ def handle_goal_action(goalList: List[int]):
             logger.debug("goal action: %s" % goal)
             pos = goal.pos_start
             prop_id = gen_property_id()
-            prop = AgdaProperty(prop_id, { PropertyKey.GOAL_NUMBER: goal.num, PropertyKey.VIRTUAL_TXT: "%s" % goal.num })
+            prop = AgdaProperty(prop_id, { PropertyKey.GOAL_NUMBER: goal.num, PropertyKey.VIRTUAL_TXT: "%d" % goal.num })
             goal_prop_map[goal.num] = prop
             id_property_map[prop_id] = goal
             # {!       ..       !}
