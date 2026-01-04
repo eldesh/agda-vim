@@ -1,7 +1,7 @@
 import vim
 import re
 import logging
-from typing import Iterator, List, Optional, MutableMapping, Tuple
+from typing import Iterator, List, Optional, MutableMapping, Tuple, Sequence
 
 from .agda_path import escape, unescape, agda2_quote_list
 from .agda_process import AgdaProcess
@@ -302,17 +302,19 @@ def interpretResponse(responses: Iterator[response.Response], quiet: bool = Fals
         else:
             pass # print(response)
 
-def sendCommand(arg: str, highlight: bool = False, quiet: bool = False):
+
+def sendCommand(args: Sequence[str], highlight: bool = False, quiet: bool = False):
     vim.command('silent! write')
     f: str = vim.current.buffer.name
     _highlight_level = Agda2HighlightLevel() if highlight else HighlightLevel.NONE
+    arg = ' '.join(args)
     logger.debug('IOTCM %s %s Indirect (%s)\nx\n' % (escape(f), _highlight_level, arg))
     # The x is a really hacky way of getting a consistent final response.  Namely, "cannot read"
     agda.stdin.write('IOTCM %s %s Indirect (%s)\nx\n' % (escape(f), _highlight_level, arg))
     interpretResponse(getOutput(), quiet)
 
 def sendCommandLoadHighlightInfo(file: str, quiet: bool):
-    sendCommand('Cmd_load_highlighting_info %s' % escape(file), highlight = True, quiet = quiet)
+    sendCommand(['Cmd_load_highlighting_info %s' % escape(file)], highlight = True, quiet = quiet)
 
 def sendCommandLoad(file: str, quiet: bool):
     assert agda is not None, "Agda process is not started"
@@ -323,7 +325,7 @@ def sendCommandLoad(file: str, quiet: bool):
         incpaths = (path.decode('utf-8') for path in vim.vars['agdavim_agda_includepathlist'])
     else:
         incpaths = (x for path in vim.vars['agdavim_agda_includepathlist'] for x in ['-i', path.decode('utf-8')])
-    sendCommand('Cmd_load %s %s' % (escape(file), agda2_quote_list(incpaths)), highlight = True, quiet = quiet)
+    sendCommand(['Cmd_load %s %s' % (escape(file), agda2_quote_list(incpaths))], highlight = True, quiet = quiet)
 
 #def getIdentifierAtCursor():
 #    (r, c) = vim.current.window.cursor
@@ -436,7 +438,7 @@ def AgdaRestartAgda(path: str):
 @vim_func(conv={'quiet': vim_bool})
 def AgdaHighlightToken(quiet: bool):
     filename = vim.current.buffer.name
-    sendCommand('Cmd_tokenHighlighting %s %s' % (escape(filename), HighlightRemove.KEEP), highlight = True, quiet = quiet)
+    sendCommand(['Cmd_tokenHighlighting %s %s' % (escape(filename), HighlightRemove.KEEP)], highlight = True, quiet = quiet)
 
 
 @vim_func
@@ -451,7 +453,7 @@ def AgdaQuitAgda():
 
 @vim_func(conv={'quiet': vim_bool})
 def AgdaShowVersion(quiet: bool):
-    sendCommand('Cmd_show_version', highlight = False, quiet = quiet)
+    sendCommand(['Cmd_show_version'], highlight = False, quiet = quiet)
 
 
 @vim_func(conv={'quiet': vim_bool})
@@ -481,11 +483,11 @@ def AgdaDisplayImplicitArguments(arg: int):
         arg: 0 to toggle display of implicit arguments, 1 to turn on, 2 to turn off.
     """
     if arg == 0:
-        return sendCommand('ToggleImplicitArgs', highlight = True)
+        return sendCommand(['ToggleImplicitArgs'], highlight = True)
     if arg == 1:
-        return sendCommand('ShowImplicitArgs True', highlight = True)
+        return sendCommand(['ShowImplicitArgs True'], highlight = True)
     if arg == 2:
-        return sendCommand('ShowImplicitArgs False', highlight = True)
+        return sendCommand(['ShowImplicitArgs False'], highlight = True)
 
 
 @vim_func(conv={'arg': vim_int_range(0,3)})
@@ -496,11 +498,11 @@ def AgdaDisplayIrrelevantArguments(arg: int):
         arg: 0 to toggle display of irrelevant arguments, 1 to turn on, 2 to turn off.
     """
     if arg == 0:
-        return sendCommand('ToggleIrrelevantArgs', highlight = True)
+        return sendCommand(['ToggleIrrelevantArgs'], highlight = True)
     if arg == 1:
-        return sendCommand('ShowIrrelevantArgs True', highlight = True)
+        return sendCommand(['ShowIrrelevantArgs True'], highlight = True)
     if arg == 2:
-        return sendCommand('ShowIrrelevantArgs False', highlight = True)
+        return sendCommand(['ShowIrrelevantArgs False'], highlight = True)
 
 
 @vim_func(conv={'useforce': vim_int_range(0,2)})
@@ -516,9 +518,9 @@ def AgdaGive(useforce: int):
     elif result[1] is None:
         print("Goal not loaded")
     elif result[0] == "?":
-        sendCommand('Cmd_give %s %d noRange %s' % (useForce, result[1], escape(promptUser("expression to give: "))))
+        sendCommand(['Cmd_give %s %d noRange %s' % (useForce, result[1], escape(promptUser("expression to give: ")))])
     else:
-        sendCommand('Cmd_give %s %d noRange %s' % (useForce, result[1], escape(result[0])))
+        sendCommand(['Cmd_give %s %d noRange %s' % (useForce, result[1], escape(result[0]))])
 
 
 @vim_func
@@ -530,9 +532,9 @@ def AgdaMakeCase():
         print("Goal not loaded")
     elif result[0] == "?":
         prompt = "pattern variables to case (empty for split on result): "
-        sendCommand('Cmd_make_case %d noRange %s' % (result[1], escape(promptUser(prompt))))
+        sendCommand(['Cmd_make_case %d noRange %s' % (result[1], escape(promptUser(prompt)))])
     else:
-        sendCommand('Cmd_make_case %d noRange %s' % (result[1], escape(result[0])))
+        sendCommand(['Cmd_make_case %d noRange %s' % (result[1], escape(result[0]))])
 
 
 @vim_func(conv={'pmlambda': vim_bool})
@@ -543,21 +545,21 @@ def AgdaRefine(pmlambda: bool):
     elif result[1] is None:
         print("Goal not loaded")
     else:
-        sendCommand('Cmd_refine_or_intro %s %d noRange %s' % (pmlambda, result[1], escape(result[0])))
+        sendCommand(['Cmd_refine_or_intro %s %d noRange %s' % (pmlambda, result[1], escape(result[0]))])
 
 
 @vim_func(conv={'quiet': vim_bool})
 def AgdaAutoMaybeAll(quiet: bool):
     result = getHoleBodyAtCursor()
     if result is None:
-        sendCommand('Cmd_autoAll', highlight = False, quiet = quiet)
+        sendCommand(['Cmd_autoAll'], highlight = False, quiet = quiet)
     elif result[1] is None:
         print("Goal not loaded")
     else:
         if agda.version < AgdaVersion(2,6,0,0):
-            sendCommand('Cmd_auto %d noRange %s' % (result[1], escape(result[0] if result[0] != "?" else "")))
+            sendCommand(['Cmd_auto %d noRange %s' % (result[1], escape(result[0] if result[0] != "?" else ""))])
         else:
-            sendCommand('Cmd_autoOne %d noRange %s' % (result[1], escape(result[0] if result[0] != "?" else "")))
+            sendCommand(['Cmd_autoOne %d noRange %s' % (result[1], escape(result[0] if result[0] != "?" else ""))])
 
 
 @vim_func(conv={'normalise': vim_normalise})
@@ -569,7 +571,7 @@ def AgdaGoalType(normalise: NormaliseType):
     elif result[1] is None:
         print("Goal not loaded")
     else:
-        sendCommand('Cmd_goal_type %s %d noRange %s' % (normalise.name, result[1], escape(result[0])))
+        sendCommand(['Cmd_goal_type %s %d noRange %s' % (normalise.name, result[1], escape(result[0]))])
 
 
 @vim_func(conv={'normalise': vim_normalise})
@@ -581,7 +583,7 @@ def AgdaGoalAndContext(normalise: NormaliseType):
     elif result[1] is None:
         print("Goal not loaded")
     else:
-        sendCommand('Cmd_goal_type_context %s %d noRange %s' % (normalise.name, result[1], escape(result[0])))
+        sendCommand(['Cmd_goal_type_context %s %d noRange %s' % (normalise.name, result[1], escape(result[0]))])
 
 
 @vim_func(conv={'normalise': vim_normalise})
@@ -594,9 +596,9 @@ def AgdaGoalAndContextAndInferred(normalise: NormaliseType):
         print("Goal not loaded")
     elif result[0] == "":
         prompt = promptUser("expression to type: ")
-        sendCommand('Cmd_goal_type_context_infer %s %d noRange %s' % (normalise.name, result[1], escape(prompt)))
+        sendCommand(['Cmd_goal_type_context_infer %s %d noRange %s' % (normalise.name, result[1], escape(prompt))])
     else:
-        sendCommand('Cmd_goal_type_context_infer %s %d noRange %s' % (normalise.name, result[1], escape(result[0])))
+        sendCommand(['Cmd_goal_type_context_infer %s %d noRange %s' % (normalise.name, result[1], escape(result[0]))])
 
 
 @vim_func(conv={'normalise': vim_normalise})
@@ -609,9 +611,9 @@ def AgdaGoalAndContextAndChecked(normalise: NormaliseType):
         print("Goal not loaded")
     elif result[0] == "":
         prompt = promptUser("expression to type: ")
-        sendCommand('Cmd_goal_type_context_check %s %d noRange %s' % (normalise.name, result[1], escape(prompt)))
+        sendCommand(['Cmd_goal_type_context_check %s %d noRange %s' % (normalise.name, result[1], escape(prompt))])
     else:
-        sendCommand('Cmd_goal_type_context_check %s %d noRange %s' % (normalise.name, result[1], escape(result[0])))
+        sendCommand(['Cmd_goal_type_context_check %s %d noRange %s' % (normalise.name, result[1], escape(result[0]))])
 
 
 @vim_func(conv={'normalise': vim_normalise})
@@ -623,18 +625,18 @@ def AgdaShowContext(normalise: NormaliseType):
     elif result[1] is None:
         print("Goal not loaded")
     else:
-        sendCommand('Cmd_context %s %d noRange %s' % (normalise.name, result[1], escape(result[0])))
+        sendCommand(['Cmd_context %s %d noRange %s' % (normalise.name, result[1], escape(result[0]))])
 
 
 @vim_func(conv={'normalise': vim_normalise})
 def AgdaInferTypeMaybeToplevel(normalise: NormaliseType):
     result = getHoleBodyAtCursor()
     if result is None:
-        sendCommand('Cmd_infer_toplevel %s %s' % (normalise.name, escape(promptUser("expression to type: "))))
+        sendCommand(['Cmd_infer_toplevel %s %s' % (normalise.name, escape(promptUser("expression to type: ")))])
     elif result[1] is None:
         print("Goal not loaded")
     else:
-        sendCommand('Cmd_infer %s %d noRange %s' % (normalise.name, result[1], escape(result[0])))
+        sendCommand(['Cmd_infer %s %d noRange %s' % (normalise.name, result[1], escape(result[0]))])
 
 
 @vim_func(conv={'computeMode': vim_compute_mode})
@@ -645,19 +647,19 @@ def AgdaComputeNormalisedMaybeToplevel(computeMode: ComputeMode):
         mode = computeMode == ComputeMode.DefaultCompute
         if result is None:
             prompt = promptUser("expression to normalise: ")
-            sendCommand('Cmd_compute_toplevel %s %s' % (mode, escape(prompt)))
+            sendCommand(['Cmd_compute_toplevel %s %s' % (mode, escape(prompt))])
         elif result[1] is None:
             print("Goal not loaded")
         else:
-            sendCommand('Cmd_compute %s %d noRange %s' % (mode, result[1], escape(result[0])))
+            sendCommand(['Cmd_compute %s %d noRange %s' % (mode, result[1], escape(result[0]))])
     else:
         if result is None:
             prompt = promptUser("expression to normalise: ")
-            sendCommand('Cmd_compute_toplevel %s %s' % (computeMode.name, escape(prompt)))
+            sendCommand(['Cmd_compute_toplevel %s %s' % (computeMode.name, escape(prompt))])
         elif result[1] is None:
             print("Goal not loaded")
         else:
-            sendCommand('Cmd_compute %s %d noRange %s' % (computeMode.name, result[1], escape(result[0])))
+            sendCommand(['Cmd_compute %s %d noRange %s' % (computeMode.name, result[1], escape(result[0]))])
 
 
 @vim_func
@@ -667,11 +669,11 @@ def AgdaWhyInScope(termName: str):
     if result is None:
         termName = getWordAtCursor() if termName == '' else termName
         termName = promptUser("Enter name: ") if termName == '' else termName
-        sendCommand('Cmd_why_in_scope_toplevel %s' % escape(termName))
+        sendCommand(['Cmd_why_in_scope_toplevel %s' % escape(termName)])
     elif result[1] is None:
         print("Goal not loaded")
     else:
-        sendCommand('Cmd_why_in_scope %d noRange %s' % (result[1], escape(result[0])))
+        sendCommand(['Cmd_why_in_scope %d noRange %s' % (result[1], escape(result[0]))])
 
 
 @vim_func(conv={'normalise': vim_normalise})
@@ -679,12 +681,12 @@ def AgdaSearchAbout(normalise: NormaliseType, name: str = ''):
     '''Search About an identifier.'''
     cname = getWordAtCursor() if name == '' else name
     query = promptUser("Name: ") if cname == '' else cname
-    sendCommand('Cmd_search_about_toplevel %s "%s"' % (normalise.name, query))
+    sendCommand(['Cmd_search_about_toplevel %s "%s"' % (normalise.name, query)])
 
 
 @vim_func(conv={'normalise': vim_normalise})
 def AgdaShowGoals(normalise: NormaliseType):
-    sendCommand('Cmd_metas %s' % normalise.name)
+    sendCommand(['Cmd_metas %s' % normalise.name])
 
 
 @vim_func(conv={'normalise': vim_normalise})
@@ -694,19 +696,19 @@ def AgdaModuleContentsMaybeToplevel(normalise: NormaliseType, moduleName: str = 
     if agda.version < AgdaVersion(2,4,2,0):
         if result is None:
             moduleName = promptUser("Module name (empty for current module): ") if moduleName == '' else moduleName
-            sendCommand('Cmd_show_module_contents_toplevel %s' % escape(moduleName))
+            sendCommand(['Cmd_show_module_contents_toplevel %s' % escape(moduleName)])
         elif result[1] is None:
             print("Goal not loaded")
         else:
-            sendCommand('Cmd_show_module_contents %d noRange %s' % (result[1], escape(result[0])))
+            sendCommand(['Cmd_show_module_contents %d noRange %s' % (result[1], escape(result[0]))])
     else:
         if result is None:
             moduleName = promptUser("Module name (empty for current module): ") if moduleName == '' else moduleName
-            sendCommand('Cmd_show_module_contents_toplevel %s %s' % (normalise.name, escape(moduleName)))
+            sendCommand(['Cmd_show_module_contents_toplevel %s %s' % (normalise.name, escape(moduleName))])
         elif result[1] is None:
             print("Goal not loaded")
         else:
-            sendCommand('Cmd_show_module_contents %s %d noRange %s' % (normalise.name, result[1], escape(result[0])))
+            sendCommand(['Cmd_show_module_contents %s %d noRange %s' % (normalise.name, result[1], escape(result[0]))])
 
 
 @vim_func(conv={'normalise': vim_normalise_asis})
@@ -718,9 +720,9 @@ def AgdaHelperFunctionType(normalise: NormaliseType):
     elif result[1] is None:
         print("Goal not loaded")
     elif result[0] == "?":
-        sendCommand('Cmd_helper_function %s %d noRange %s' % (normalise.name, result[1], escape(promptUser("Expression: "))))
+        sendCommand(['Cmd_helper_function %s %d noRange %s' % (normalise.name, result[1], escape(promptUser("Expression: ")))])
     else:
-        sendCommand('Cmd_helper_function %s %d noRange %s' % (normalise.name, result[1], escape(result[0])))
+        sendCommand(['Cmd_helper_function %s %d noRange %s' % (normalise.name, result[1], escape(result[0]))])
 
 @vim_func
 def AgdaVimSetLoggingLevel(level: int):
