@@ -105,7 +105,9 @@ def forget_all_goal_properties():
         for prop in prop_list(lnum, { 'types': ['agdavim:agdaHole'] }):
             logger.debug("delete: prop: %s" % prop)
             assert isinstance(prop["id"], int)
-            del id_property_map[PropertyId(int(prop["id"]))]
+            prop_id = PropertyId(prop["id"])
+            if prop_id in id_property_map:
+                del id_property_map[prop_id]
 
     prop_remove({ 'type': 'agdavim:agdaHole', 'all': True })
     prop_remove({ 'type': 'agdavim:agdaHoleNumber', 'all': True })
