@@ -38,6 +38,7 @@ inputrestore_: Callable[[], int] = Function("inputrestore")
 
 prop_remove_: Callable[..., int] = Function("prop_remove")
 
+charidx_: Callable[[str, int], int] = Function("charidx")
 
 def prop_add(line: int, col: int, prop: dict[str, GroundType]) -> int:
     return prop_add_(line, col, prop)
@@ -83,3 +84,6 @@ def inputrestore() -> int:
 def current_position() -> OBPoint:
     row, col = vim.current.window.cursor
     return OBPoint(row, col+1)
+
+def charidx(line: str, col: int) -> int:
+    return charidx_(line, col)
