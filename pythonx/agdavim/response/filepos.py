@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Generic, TypeVar, ClassVar
+from typing import Generic, TypeVar, ClassVar, Any
 
 from .sexpr import Pair
 from . import sexpr
@@ -61,43 +61,24 @@ class Point(Generic[O, U]):
             return Point[Origin1, U](self.row + 1, self.col + 1)
 
 
+P_co = TypeVar("P_co", bound=Point[Any, Any], covariant=True)
+
 @dataclass(order=True, frozen=True, slots=True)
-class Range(Generic[O, U]):
-    """Represents a range in a buffer with start and end points.
-    
-    Represents a range in a buffer with start and end points with closed interval.
-
-    Type parameters:
-    - O indicates the origin of the offset (e.g., Origin0 or Origin1).
-    - U indicates the unit of the offset (e.g., UnitByte or UnitChar).
-    """
-
+class Range(Generic[P_co]):
     ORIGIN: ClassVar[int]
-    _start: Point[O, U]
-    _end: Point[O, U]
+    _start: P_co
+    _end: P_co
 
     @property
-    def start(self) -> Point[O, U]:
+    def start(self) -> P_co:
         return self._start
 
     @property
-    def end(self) -> Point[O, U]:
+    def end(self) -> P_co:
         return self._end
 
     def __str__(self) -> str:
         return "[%s,%s]" % (self.start, self.end)
-
-    def to_zero_origin(self) -> Range[Origin0, U]:
-        if self.ORIGIN == 0:
-            return self  # type: ignore[return-value]
-        else:
-            return Range[Origin0, U](self.start.to_zero_origin(), self.end.to_zero_origin())
-
-    def to_one_origin(self) -> Range[Origin1, U]:
-        if self.ORIGIN == 1:
-            return self  # type: ignore[return-value]
-        else:
-            return Range[Origin1, U](self.start.to_one_origin(), self.end.to_one_origin())
 
 
 @dataclass(order=True, frozen=True, slots=True)
@@ -182,23 +163,23 @@ class OBPoint(Point[Origin1, UnitByte]):
         return ZBPoint(self.row - 1, self.col - 1)
 
 
-class ZCRange(Range[Origin0, UnitChar]):
-    ORIGIN = 0
+class ZCRange(Range[ZCPoint]):
+    ORIGIN = ZCPoint.ORIGIN
     def to_one_origin(self) -> OCRange:
         return OCRange(self.start.to_one_origin(), self.end.to_one_origin())
 
-class OCRange(Range[Origin1, UnitChar]):
-    ORIGIN = 1
+class OCRange(Range[OCPoint]):
+    ORIGIN = OCPoint.ORIGIN
     def to_zero_origin(self) -> ZCRange:
         return ZCRange(self.start.to_zero_origin(), self.end.to_zero_origin())
 
-class ZBRange(Range[Origin0, UnitByte]):
-    ORIGIN = 0
+class ZBRange(Range[ZBPoint]):
+    ORIGIN = ZBPoint.ORIGIN
     def to_one_origin(self) -> OBRange:
         return OBRange(self.start.to_one_origin(), self.end.to_one_origin())
 
-class OBRange(Range[Origin1, UnitByte]):
-    ORIGIN = 1
+class OBRange(Range[OBPoint]):
+    ORIGIN = OBPoint.ORIGIN
     def to_zero_origin(self) -> ZBRange:
         return ZBRange(self.start.to_zero_origin(), self.end.to_zero_origin())
 
