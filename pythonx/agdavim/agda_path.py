@@ -12,11 +12,11 @@ def agda2_quote_list(ss: Iterator[str]) -> str:
     return '[' + ', '.join(escape(s) for s in ss) + ']'
 
 # This technically needs to turn a string into a Haskell escaped string, buuuut just gonna cheat.
-def escape(s: str):
+def escape(s: str) -> str:
     estr = s.replace('\\', '\\\\').replace('"', '\\"').replace('\n','\\n')
     return '"' + ''.join(agda2_quote_char(c) for c in estr) + '"'
 
 # This technically needs to turn a Haskell escaped string into a string, buuuut just gonna cheat.
-def unescape(s: str):
+def unescape(s: str) -> str:
     return s.replace('\\\\','\x00').replace('\\"', '"').replace('\\n','\n').replace('\x00', '\\') # hacktastic
 
