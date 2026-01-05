@@ -1,25 +1,34 @@
 from __future__ import annotations
 from dataclasses import dataclass
+from typing import Optional
+import vim
 
+from .agda_path import agda2_quote_string
 from .response import sexpr
 from .response.sexpr import Symbol
-from .agda_path import escape
+from .response.filepos import OBRange, OBPoint
+import vimapi
 
 @dataclass(order=True, frozen=True, slots=True)
 class Position:
-    """ Represents a position in a buffer. """
+    """ Represents a position in a buffer.
+
+    _point: int 1-based absolute position (in characters)
+    _row: int 1-based line number
+    _col: int 1-based column number (in characters)
+    """
 
     _point: int
-    _line: int
+    _row: int
     _col: int
-    
+
     @property
     def point(self) -> int:
         return self._point
 
     @property
-    def line(self) -> int:
-        return self._line
+    def row(self) -> int:
+        return self._row
 
     @property
     def col(self) -> int:
@@ -29,18 +38,34 @@ class Position:
         return sexpr.format(self.to_sexpr())
 
     def to_sexpr(self) -> sexpr.SExpr:
-        return ["Pn", [], self.point, self.line, self.col]
+        return [Symbol("Pn"), [], self.point, self.row, self.col]
+
+    @classmethod
+    def from_point(cls, pos: OBPoint, buffer: vim.Buffer) -> Position:
+        """Convert from OBPoint (1-origin, byte unit) to Position (1-origin, char unit) in current buffer."""
+        prev_nl = pos.row - 1 # Number of line breaks '\n'
+        # Number of characters up to the previous line
+        chars = sum(len(s) for s in buffer[:prev_nl])
+        # In the line: byte column -> character column (1-based)
+        line = buffer[prev_nl]
+        colc = int(vimapi.charidx(line, pos.col)) + 1
+        return cls(chars + prev_nl + colc, pos.row, pos.col)
+
+    @classmethod
+    def current(cls, buffer: vim.Buffer) -> Position:
+        pos = vimapi.current_position()
+        return cls.from_point(pos, buffer)
 
 
 @dataclass(order=True, frozen=True, slots=True)
 class BufferRange:
-    _file: str
+    _buffer: vim.Buffer
     _start: Position
     _end: Position
 
     @property
-    def file(self) -> str:
-        return self._file
+    def filename(self) -> str:
+        return self._buffer.name
 
     @property
     def start(self) -> Position:
@@ -54,6 +79,17 @@ class BufferRange:
         return sexpr.format(self.to_sexpr())
 
     def to_sexpr(self) -> sexpr.SExpr:
-        interval = "[Interval %s %s]" % (self.start.to_sexpr(), self.end.to_sexpr())
-        return ["intervalsToRange", ["Just", ["mkAbsolute", escape(self.file)]], Symbol(interval)]
+        S = Symbol
+        interval = [S("Interval"), self.start.to_sexpr(), self.end.to_sexpr()]
+        return [S("intervalsToRange"), [S("Just"), [S("mkAbsolute"), agda2_quote_string(self.filename)]], interval]
+
+
+def mk_range(rng: Optional[OBRange]) -> Optional[BufferRange]:
+    if rng:
+        return BufferRange(
+                vim.current.buffer,
+                Position.from_point(rng.start, vim.current.buffer),
+                Position.from_point(rng.end  , vim.current.buffer))
+    else:
+        return None
 
