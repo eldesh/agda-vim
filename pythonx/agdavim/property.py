@@ -52,5 +52,5 @@ class AgdaProperty:
         return self._prop.items()
 
     def __str__(self) -> str:
-        return str(self._prop)
+        return ('id: %s' % self._id) + ' ' + str(self._prop)
 
