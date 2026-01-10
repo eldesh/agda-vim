@@ -345,28 +345,29 @@ def handle_give_action(interaction_id: InteractionId, action: GiveResult):
         logger.error('handle_give_action: no goal at current position')
         return
 
-    line = vim.current.line
     logger.debug('handle_give_action: goal: %d%s action: %s' % (goalnum, rng, action))
     start = rng.start.to_zero_origin()
     end   = rng.end.to_zero_origin()
+    line  = vim.current.buffer[start.row]
     if isinstance(action, GiveString):
         logger.debug('GiveString: line[:start.col]: %s' % line[:start.col])
         logger.debug('GiveString: line[end.col+2:]: %s' % line[end.col+2:])
-        vim.current.line = line[:start.col] + action.text + line[end.col+2:]
-        logger.debug('GiveString: line: %s' % vim.current.line)
+        vim.current.buffer[start.row] = line[:start.col] + action.text + line[end.col+2:]
+        logger.debug('GiveString: line: %s' % vim.current.buffer[start.row])
+
 
     elif isinstance(action, GiveParen):
         logger.debug('GiveParen: line[:start.col]: %s' % line[:start.col])
         logger.debug('GiveParen: line[end.col+2:]: %s' % line[end.col+2:])
-        vim.current.line = line[:start.col] + "(" + line[start.col+2:end.col-2+1] + ")" + line[end.col+1:]
-        logger.debug('GiveParen: line: %s' % vim.current.line)
+        vim.current.buffer[start.row] = line[:start.col] + "(" + line[start.col+2:end.col-2+1] + ")" + line[end.col+1:]
+        logger.debug('GiveParen: line: %s' % vim.current.buffer[start.row])
 
     else:
         assert isinstance(action, GiveNoParen)
         logger.debug('GiveNoParen: line[:start.col]: %s' % line[:start.col])
         logger.debug('GiveNoParen: line[end.col+2:]: %s' % line[end.col+2:])
-        vim.current.line = line[:start.col] + line[start.col+2:end.col-2+1] + line[end.col+1:]
-        logger.debug('GiveNoParen: line: %s' % vim.current.line)
+        vim.current.buffer[start.row] = line[:start.col] + line[start.col+2:end.col-2+1] + line[end.col+1:]
+        logger.debug('GiveNoParen: line: %s' % vim.current.buffer[start.row])
 
 
 def handle_make_case_action(priority: Optional[int], newcls: List[str], quiet: bool):
