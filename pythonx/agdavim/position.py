@@ -49,7 +49,7 @@ class Position:
         # In the line: byte column -> character column (1-based)
         line = buffer[prev_nl]
         colc = int(vimapi.charidx(line, pos.col)) + 1
-        return cls(chars + prev_nl + colc, pos.row, pos.col)
+        return cls(chars + prev_nl + colc, pos.row, colc)
 
     @classmethod
     def current(cls, buffer: vim.Buffer) -> Position:
