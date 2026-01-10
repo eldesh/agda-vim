@@ -7,7 +7,7 @@ from .agda_path import escape, unescape, agda2_quote_string, agda2_quote_list
 from .agda_process import AgdaProcess
 from .agda_version import AgdaVersion
 from .agda_goal import AgdaGoal, GoalNumber
-from .command import HighlightLevel, Remove as HighlightRemove, HighlightCommand
+from .command import HighlightLevel, Remove as HighlightRemove, HighlightCommand, InputEmpty, InputFromGoal, InputFromPrompt, InputMode
 from . import log
 from . import response
 from .response import InfoActionResponse, InfoActionAndCopyResponse, GoalsActionResponse, GiveActionResponse, MakeCaseActionResponse, MakeCaseActionExtendlamResponse, HighlightAddAnnotationsResponse, GiveString, RemoveTokenBasedHighlighting, GiveResult, GiveParen, GiveNoParen, InteractionId
@@ -16,7 +16,7 @@ from .vimfunc import vim_func, vim_bool, vim_int_range, vim_normalise, vim_compu
 from .property import AgdaProperty, PropertyId, PropertyKey
 from .vimapi import prop_add, prop_remove, prop_list, prop_find, current_position
 from . import vimapi
-from .response.filepos import OBPoint, OCFilePosition, OBRange, OCPoint, OCRange
+from .response.filepos import OBPoint, OCFilePosition, OBRange
 from .protocol import NormaliseType, ComputeMode
 from .position import mk_range
 
@@ -25,27 +25,6 @@ AGDA2_OUTPUT_PROMPT: str = "Agda2> "
 
 
 logger = logging.getLogger(__name__)
-
-
-class InputMode:
-    pass
-
-
-class InputFromPrompt(InputMode):
-    _prompt: str
-
-    @property
-    def prompt(self) -> str:
-        return self._prompt
-
-
-class InputFromGoal(InputMode):
-    pass
-
-
-class InputEmpty(InputMode):
-    pass
-
 
 # start Agda
 # TODO: I'm pretty sure this will start an agda process per buffer which is less than desirable...

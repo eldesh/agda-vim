@@ -21,7 +21,7 @@ class UsePrefixArgs(Enum):
             return "WithoutForce"
 
 
-@dataclass
+@dataclass(order=True, frozen=True, slots=True)
 class HighlightCommand:
     """
     Represents a highlight annotation of the form:
@@ -129,4 +129,28 @@ class HighlightLevel(Enum):
         if s == "Interactive":
             return HighlightLevel.INTERACTIVE
         raise ValueError("Unknown HighlightLevel string: %s" % s)
+
+
+@dataclass(order=True, frozen=True, slots=True)
+class InputMode:
+    pass
+
+
+@dataclass(order=True, frozen=True, slots=True)
+class InputFromPrompt(InputMode):
+    _prompt: str
+
+    @property
+    def prompt(self) -> str:
+        return self._prompt
+
+
+@dataclass(order=True, frozen=True, slots=True)
+class InputFromGoal(InputMode):
+    pass
+
+
+@dataclass(order=True, frozen=True, slots=True)
+class InputEmpty(InputMode):
+    pass
 
