@@ -630,16 +630,13 @@ def AgdaRefine(pmlambda: bool):
 
 @vim_func(conv={'quiet': vim_bool})
 def AgdaAutoMaybeAll(quiet: bool):
-    result = getHoleBodyAtCursor()
-    if result is None:
-        sendCommand(['Cmd_autoAll'], highlight = False, quiet = quiet)
-    elif result[1] is None:
-        print("Goal not loaded")
-    else:
+    if goal_at(current_position()):
         if agda.version < AgdaVersion(2,6,0,0):
-            sendCommand(['Cmd_auto %d noRange %s' % (result[1], escape(result[0] if result[0] != "?" else ""))])
+            goal_command(['Cmd_auto'   ], save = True, input = InputFromGoal())
         else:
-            sendCommand(['Cmd_autoOne %d noRange %s' % (result[1], escape(result[0] if result[0] != "?" else ""))])
+            goal_command(['Cmd_autoOne'], save = True, input = InputFromGoal())
+    else:
+        sendCommand(['Cmd_autoAll'], save = False, highlight = False, quiet = quiet)
 
 
 @vim_func(conv={'normalise': vim_normalise})
