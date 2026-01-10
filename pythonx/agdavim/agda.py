@@ -49,9 +49,9 @@ def range_of_goal(goalnum: int) -> Optional[OBRange]:
     if prop is None:
         return None
 
-    vimprop = prop_find({ 'type': 'agdavim:agdaHole', 'id': prop.id.get() })
+    vimprop = prop_find({ 'type': 'agdavim:agdaHole', 'id': prop.id.get(), 'both': True })
     start = OBPoint(int(vimprop['lnum']), int(vimprop['col']))
-    end   = OBPoint(int(vimprop['lnum']), start.col + int(vimprop['length']) - 1)
+    end   = OBPoint(int(vimprop['lnum']), start.col + int(vimprop['length']))
     return OBRange(start, end)
 
 
