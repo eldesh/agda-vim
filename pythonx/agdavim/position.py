@@ -7,7 +7,7 @@ from .agda_path import agda2_quote_string
 from .response import sexpr
 from .response.sexpr import Symbol
 from .response.filepos import OBRange, OBPoint
-import vimapi
+from . import vimapi
 
 @dataclass(order=True, frozen=True, slots=True)
 class Position:
