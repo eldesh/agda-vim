@@ -3,7 +3,7 @@ import re
 import logging
 from typing import Iterator, List, Optional, MutableMapping, Tuple, Sequence
 
-from .agda_path import escape, unescape, agda2_quote_list
+from .agda_path import escape, unescape, agda2_quote_string, agda2_quote_list
 from .agda_process import AgdaProcess
 from .agda_version import AgdaVersion
 from .agda_goal import AgdaGoal, GoalNumber
@@ -16,13 +16,35 @@ from .vimfunc import vim_func, vim_bool, vim_int_range, vim_normalise, vim_compu
 from .property import AgdaProperty, PropertyId, PropertyKey
 from .vimapi import prop_add, prop_remove, prop_list, prop_find, current_position
 from . import vimapi
-from .response.filepos import OBPoint, OCFilePosition, OBRange
+from .response.filepos import OBPoint, OCFilePosition, OBRange, OCPoint, OCRange
 from .protocol import NormaliseType, ComputeMode
+from .position import mk_range
+
+
+AGDA2_OUTPUT_PROMPT: str = "Agda2> "
 
 
 logger = logging.getLogger(__name__)
 
-AGDA2_OUTPUT_PROMPT: str = "Agda2> "
+
+class InputMode:
+    pass
+
+
+class InputFromPrompt(InputMode):
+    _prompt: str
+
+    @property
+    def prompt(self) -> str:
+        return self._prompt
+
+
+class InputFromGoal(InputMode):
+    pass
+
+
+class InputEmpty(InputMode):
+    pass
 
 
 # start Agda
@@ -303,14 +325,66 @@ def interpretResponse(responses: Iterator[response.Response], quiet: bool = Fals
             pass # print(response)
 
 
-def sendCommand(args: Sequence[str], highlight: bool = False, quiet: bool = False):
-    vim.command('silent! write')
+def goal_range_at(pos: OBPoint) -> Optional[OBRange]:
+    for prop in prop_list(pos.row, { 'types': ['agdavim:agdaHole'] }):
+        pcol = int(prop['col'])
+        plen = int(prop['length'])
+        if pcol <= pos.col-1 and pos.col-1 <= pcol + plen:
+            prop_id = PropertyId(prop['id'])
+            goal = id_property_map.get(prop_id)
+            if goal:
+                start = OBPoint(pos.row, int(prop['col']))
+                end   = OBPoint(pos.row, int(prop['col']) + int(prop['length']) - 1)
+                return OBRange(start, end)
+    return None
+
+
+def goal_at(pos: OBPoint) -> Optional[AgdaGoal]:
+    for prop in prop_list(pos.row, { 'types': ['agdavim:agdaHole'] }):
+        pcol = int(prop['col'])
+        plen = int(prop['length'])
+        if pcol <= pos.col-1 and pos.col-1 <= pcol + plen:
+            prop_id = PropertyId(int(prop['id']))
+            return id_property_map.get(prop_id)
+    return None
+
+
+# agda2-goal-command
+def goal_command(cmd: Sequence[str], save: bool, input: InputMode):
+    pos = current_position()
+    if isinstance(input, InputFromGoal):
+        rng = mk_range(goal_range_at(pos))
+        highlight = True
+        assert rng is not None, "Expected a valid range"
+        # skip {! and !}
+        txt = vim.current.buffer[rng.start.row-1][rng.start.col-1+2:rng.end.col-2]
+    elif isinstance(input, InputFromPrompt):
+        rng = None
+        highlight = False
+        txt = promptUser(input.prompt + ": ")
+    elif isinstance(input, InputEmpty):
+        rng = None
+        highlight = False
+        txt = ""
+    else:
+        raise ValueError("Unknown input mode: %r" % input)
+
+    goal = goal_at(pos)
+    assert goal is not None, ("Expected a valid goal at %s" % pos)
+    args = list(cmd) + list(["%d" % goal.num, "%s" % rng, agda2_quote_string(txt)])
+    logger.debug("goal_command: args: %s %s %s" % (args, "save" if save else "nosave", "highlight" if highlight else "nohighlight"))
+    sendCommand(args, save = save, highlight = highlight)
+
+
+def sendCommand(args: Sequence[str], save: bool = True, highlight: bool = False, quiet: bool = False):
+    if save:
+        vim.command('silent! write')
     f: str = vim.current.buffer.name
     _highlight_level = Agda2HighlightLevel() if highlight else HighlightLevel.NONE
     arg = ' '.join(args)
-    logger.debug('IOTCM %s %s Indirect (%s)\nx\n' % (escape(f), _highlight_level, arg))
+    logger.debug('IOTCM %s %s Indirect ( %s )\nx\n' % (escape(f), _highlight_level, arg))
     # The x is a really hacky way of getting a consistent final response.  Namely, "cannot read"
-    agda.stdin.write('IOTCM %s %s Indirect (%s)\nx\n' % (escape(f), _highlight_level, arg))
+    agda.stdin.write('IOTCM %s %s Indirect ( %s )\nx\n' % (escape(f), _highlight_level, arg))
     interpretResponse(getOutput(), quiet)
 
 def sendCommandLoadHighlightInfo(file: str, quiet: bool):
