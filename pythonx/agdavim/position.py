@@ -76,12 +76,8 @@ class BufferRange:
         return self._end
 
     def __str__(self) -> str:
-        return sexpr.format(self.to_sexpr())
-
-    def to_sexpr(self) -> sexpr.SExpr:
-        S = Symbol
-        interval = [S("Interval"), self.start.to_sexpr(), self.end.to_sexpr()]
-        return [S("intervalsToRange"), [S("Just"), [S("mkAbsolute"), agda2_quote_string(self.filename)]], interval]
+        return "(intervalsToRange (Just (mkAbsolute %s)) [Interval %s %s])" % (
+            agda2_quote_string(self.filename), self.start, self.end)
 
 
 def mk_range(rng: Optional[OBRange]) -> Optional[BufferRange]:
