@@ -369,6 +369,11 @@ def handle_give_action(interaction_id: InteractionId, action: GiveResult):
         vim.current.buffer[start.row] = line[:start.col] + line[start.col+2:end.col-2+1] + line[end.col+1:]
         logger.debug('GiveNoParen: line: %s' % vim.current.buffer[start.row])
 
+    prop = goal_prop_map[goalnum]
+    if prop:
+        del goal_prop_map[goalnum]
+        del id_property_map[prop.id]
+
 
 def handle_make_case_action(priority: Optional[int], newcls: List[str], quiet: bool):
     pos = current_position()
