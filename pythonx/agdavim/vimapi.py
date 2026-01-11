@@ -40,6 +40,8 @@ prop_remove_: Callable[..., int] = Function("prop_remove")
 
 charidx_: Callable[[str, int], int] = Function("charidx")
 
+byteidx_: Callable[[str, int], int] = Function("byteidx")
+
 def prop_add(line: int, col: int, prop: dict[str, GroundType]) -> int:
     return prop_add_(line, col, prop)
 
@@ -87,3 +89,6 @@ def current_position() -> OBPoint:
 
 def charidx(line: str, col: int) -> int:
     return charidx_(line, col)
+
+def byteidx(line: str, col: int) -> int:
+    return byteidx_(line, col)
