@@ -117,7 +117,7 @@ def forget_all_goal_properties():
     goal_prop_map.clear()
     for lnum in range(1, len(vim.current.buffer)+1): # 1-origin
         for prop in prop_list(lnum, { 'types': ['agdavim:agdaHole'] }):
-            logger.debug("delete: prop: %s" % prop)
+            logger.debug("delete: prop: %s" % (','.join(map(str, prop.items()))))
             assert isinstance(prop["id"], int)
             prop_id = PropertyId(prop["id"])
             if prop_id in id_property_map:
