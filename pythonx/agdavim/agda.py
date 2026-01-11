@@ -591,7 +591,7 @@ def AgdaMakeCase():
         print("No hole under the cursor")
     elif result[1] is None:
         print("Goal not loaded")
-    elif result[0] == "?":
+    elif result[0] == "?" or re.match(r"^\s*$", result[0]):
         prompt = "pattern variables to case (empty for split on result): "
         sendCommand(['Cmd_make_case %d noRange %s' % (result[1], escape(promptUser(prompt)))])
     else:
