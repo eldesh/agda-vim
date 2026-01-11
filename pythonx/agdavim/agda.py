@@ -14,9 +14,9 @@ from .response import InfoActionResponse, InfoActionAndCopyResponse, GoalsAction
 from .response import sexpr
 from .vimfunc import vim_func, vim_bool, vim_int_range, vim_normalise, vim_compute_mode, vim_normalise_asis
 from .property import AgdaProperty, PropertyId, PropertyKey
-from .vimapi import prop_add, prop_remove, prop_list, prop_find, current_position
+from .vimapi import prop_add, prop_remove, prop_list, prop_find, current_position, charidx
 from . import vimapi
-from .response.filepos import OBPoint, OCFilePosition, OBRange
+from .response.filepos import OBPoint, OCFilePosition, OBRange, OCPoint
 from .protocol import NormaliseType, ComputeMode
 from .position import mk_range
 
@@ -89,12 +89,12 @@ def find_goals_from_current_buffer(goals: List[int]) -> Iterator[AgdaGoal]:
             if m.group() == "?":
                 col0 = m.start()
                 buffer[row-1] = line[:col0] + "{!!}" + line[col0+1:]
-                yield AgdaGoal(buffer.number, GoalNumber(goals.pop(0)), buffer[row-1][col0:col0+4], OBPoint(row, col0+1), OBPoint(row, col0+1+4-1))
+                yield AgdaGoal(buffer.number, GoalNumber(goals.pop(0)), buffer[row-1][col0:col0+4], OCPoint(row, col0+1), OCPoint(row, col0+1+4-1))
             elif m.group() == "{!":
                 hend = line.find("!}", m.end())
                 if hend != -1:
                     col0 = m.start()
-                    yield AgdaGoal(buffer.number, GoalNumber(goals.pop(0)), line[col0:hend+2], OBPoint(row, col0+1), OBPoint(row, hend+1+2-1))
+                    yield AgdaGoal(buffer.number, GoalNumber(goals.pop(0)), line[col0:hend+2], OCPoint(row, col0+1), OCPoint(row, hend+1+2-1))
 
 
 def forget_all_goal_properties():

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import NewType
 
-from .response.filepos import OBPoint
+from .response.filepos import OCPoint
 
 
 GoalNumber = NewType('GoalNumber', int)
@@ -12,15 +12,16 @@ class AgdaGoal:
 
     _buf: (int) Buffer number.
     _num: (GoalNumber) Goal number.
-    _pos: (Point) Position of the goal in the buffer. (1-origin, byte unit)
-    _prop: (Property) Properties associated with the goal.
+    _contents: (str) Contents of the goal.
+    _pos_start: (OCPoint) start position of the goal in the buffer.
+    _pos_end: (OCPoint) end position of the goal in the buffer.
     """
 
     _buf: int
     _num: GoalNumber
     _contents: str
-    _pos_start: OBPoint
-    _pos_end: OBPoint # _pos_start <= _pos_end
+    _pos_start: OCPoint
+    _pos_end: OCPoint # _pos_start <= _pos_end
 
     @property
     def buf(self) -> int:
@@ -35,11 +36,11 @@ class AgdaGoal:
         return self._contents
 
     @property
-    def pos_start(self) -> OBPoint:
+    def pos_start(self) -> OCPoint:
         return self._pos_start
 
     @property
-    def pos_end(self) -> OBPoint:
+    def pos_end(self) -> OCPoint:
         return self._pos_end
 
     def __str__(self) -> str:
