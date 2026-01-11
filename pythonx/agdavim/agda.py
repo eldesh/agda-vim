@@ -16,7 +16,7 @@ from .vimfunc import vim_func, vim_bool, vim_int_range, vim_normalise, vim_compu
 from .property import AgdaProperty, PropertyId, PropertyKey
 from .vimapi import prop_add, prop_remove, prop_list, prop_find, current_position, charidx
 from . import vimapi
-from .response.filepos import OBPoint, OCFilePosition, OBRange, OCPoint
+from .response.filepos import ZCPoint, OBPoint, OCFilePosition, OBRange, OCPoint
 from .protocol import NormaliseType, ComputeMode
 from .position import mk_range
 
@@ -262,47 +262,7 @@ def interpretResponse(responses: Iterator[response.Response], quiet: bool = Fals
             handle_goal_action(response.goals)
 
         elif isinstance(response, MakeCaseActionExtendlamResponse):
-            newcls = [ cls.replace("?", "{!   !}") for cls in response.newcls ] # this probably isn't safe
-
-            # ss = ' \'("z {true} → ?" "z {false} → ?")))'
-            # >>> re.findall(r'"((?:[^"\\]|\\.)*)"', ss)
-            # ['z {true} → ?', 'z {false} → ?']
-            cases = newcls
-
-            col = vim.current.window.cursor[1]
-            line = vim.current.line
-
-            # TODO: The following logic is far from perfect.
-            # Look for a semicolon ending the previous case.
-            correction = 0
-            starts = [mo for mo in re.finditer(r';', line[:col])]
-            if len(starts) == 0:
-                # Look for the starting bracket of the extended lambda..
-                correction = 1
-                starts = [mo for mo in re.finditer(r'{[^!]', line[:col])]
-                if len(starts) == 0:
-                    # Assume the case is on a line by itself.
-                    correction = 1
-                    starts = [mo for mo in re.finditer(r'^[ \t]*', line[:col])]
-            start = starts[-1].end() - correction
-
-            # Look for a semicolon ending this case.
-            correction = 0
-            ends = re.search(r';', line[col:])
-            if ends == None:
-                # Look for the ending bracket of the extended lambda.
-                correction = 1
-                ends = re.search(r'[^!]}', line[col:])
-                if ends == None:
-                    # Assume the case is on a line by itself (or at least has nothing after it).
-                    correction = 0
-                    ends = re.search(r'[ \t]*$', line[col:])
-            end = ends.start() + col + correction
-
-            vim.current.line = line[:start] + " " + "; ".join(cases) + " " + line[end:]
-            f = vim.current.buffer.name
-            sendCommandLoad(f, quiet)
-            break
+            handle_make_case_action_extendlam(response.priority, response.newcls, quiet)
 
         elif isinstance(response, MakeCaseActionResponse):
             handle_make_case_action(response.priority, response.newcls, quiet)
@@ -454,6 +414,52 @@ def handle_make_case_action(priority: Optional[int], newcls: List[str], quiet: b
     for row in range(1, len(newcls)+1):
         logger.debug('handle_make_case_action: %s' % vim.current.buffer[pos.row-1+row])
     sendCommandLoad(vim.current.buffer.name, quiet)
+
+
+def handle_make_case_action_extendlam(priority: Optional[int], newcls: List[str], quiet: bool):
+    """Replace definition of extended lambda with new clauses NEWCLS and reload."""
+    forget_all_goal_properties()
+
+    buffer = vim.current.buffer
+    line = vim.current.line
+    p0 = current_position()
+    p0col_char = vimapi.charidx(line, p0.col - 1) + 1 # to OCPoint.col
+    goal_end = p0col_char-1 + line[p0col_char-1:].index(r'!}') + 2
+    i = re.search(r'\S', line)
+    p1 = ZCPoint(p0.row-1, i.start() if i else len(line))
+    indent = p1.col
+
+    cur = line[:p0col_char+1].rindex(r'{!') # ZCPoint.col
+    if cur == -1:
+        logger.error('extendlam: cannot find {!: %s' % line)
+        return
+
+    bracket = 0
+    while line[cur - 1] != ';' and bracket >= 0 and cur > p1.col:
+        cur -= 1
+        if line[cur - 1] == '}':
+            bracket += 1
+        elif line[cur - 1] == '{':
+            bracket -= 1
+
+    islambda = cur == p1.col
+    if not islambda:
+        buffer[p0.row-1] = buffer[p0.row-1][:cur] + ' ' + buffer[p0.row-1][goal_end:]
+        cur += 1
+
+    row = p0.row - 1
+    for i, cl in enumerate(newcls):
+        buffer[row] = buffer[row][:cur] + cl + buffer[row][cur:]
+        cur += len(cl)
+        if i+1 < len(newcls):
+            if islambda:
+                row += 1
+                buffer[row] = (' ' * indent) + buffer[row]
+            else:
+                buffer[row] = buffer[row][:cur] + ' ; ' + buffer[row][cur:]
+                cur += len(' ; ')
+
+    sendCommandLoad(buffer.name, quiet)
 
 
 def getHoleBodyAtCursor() -> Optional[Tuple[str, Optional[int]]]:
