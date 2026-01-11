@@ -145,7 +145,7 @@ def handle_goal_action(goalList: List[int]):
 def findGoal(row: int, col: int) -> Optional[int]:
     for item in id_property_map.values():
         logger.debug('find goal: %s' % item)
-        if item.pos_start == OBPoint(row, col):
+        if item.pos_start.row == row and item.pos_start.col <= col and col <= item.pos_end.col:
             logger.debug('findGoal (found) in %s: (%d,%d)' % (item, row, col))
             return item.num
     logger.debug('findGoal (not found) in %s: (%d,%d)' % (id_property_map, row, col))
