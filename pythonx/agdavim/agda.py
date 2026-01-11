@@ -84,17 +84,30 @@ def find_goals_from_current_buffer(goals: List[int]) -> Iterator[AgdaGoal]:
     for row, line in enumerate(buffer, start=1):
         if not goals:
             break
-        for m in pattern.finditer(line):
+        offset = 0
+        # NOTE: line may be updated in the loop
+        while m := pattern.search(line, offset):
             logger.debug("found pattern %s at %d:%d" % (m.group(), row, m.start()))
             if m.group() == "?":
                 col0 = m.start()
+                # logger.debug("replace ? at %d:%d with {!!}: %s{!!}%s" % (row, col0, line[:col0], line[col0+1:]))
                 buffer[row-1] = line[:col0] + "{!!}" + line[col0+1:]
+                offset += col0 + len("{!!}")
                 yield AgdaGoal(buffer.number, GoalNumber(goals.pop(0)), buffer[row-1][col0:col0+4], OCPoint(row, col0+1), OCPoint(row, col0+1+4-1))
             elif m.group() == "{!":
                 hend = line.find("!}", m.end())
                 if hend != -1:
                     col0 = m.start()
+                    offset += hend + len("!}")
                     yield AgdaGoal(buffer.number, GoalNumber(goals.pop(0)), line[col0:hend+2], OCPoint(row, col0+1), OCPoint(row, hend+1+2-1))
+                else:
+                    logger.error("'!}' is not found on the line %d: %s" % (row, line))
+                    break
+            else:
+                # skip other patterns
+                offset = m.end()
+            # refresh
+            line = buffer[row-1]
 
 
 def forget_all_goal_properties():
