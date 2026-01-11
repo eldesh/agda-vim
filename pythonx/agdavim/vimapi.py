@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Callable, Union, overload, Optional, List
+from typing import Any, Callable, Union, overload, Optional, List, AnyStr
 
 import vim
 from .response.filepos import OBPoint
@@ -30,7 +30,7 @@ prop_find_: Callable[[dict[str, GroundType]], dict[str, GroundType]] = Function(
 
 prop_list_: Callable[[int, dict[str, GroundType]], List[dict[str, GroundType]]] = Function("prop_list")
 
-input_: Callable[..., str] = Function("input")
+input_: Callable[..., bytes] = Function("input")
 
 inputsave_: Callable[[], int] = Function("inputsave")
 
@@ -72,7 +72,7 @@ def prop_remove(props: dict[str, GroundType], lnum: Optional[int] = None, lnumen
     else:
         return prop_remove_(props, lnum, lnumend)
 
-def input(prompt: str, text: Optional[str] = None) -> str:
+def input(prompt: AnyStr, text: Optional[AnyStr] = None) -> bytes:
     if text is not None:
         return input_(prompt, text)
     return input_(prompt)

@@ -1,7 +1,7 @@
 import vim
 import re
 import logging
-from typing import Iterator, List, Optional, MutableMapping, Tuple, Sequence
+from typing import Iterator, List, Optional, MutableMapping, Tuple, Sequence, AnyStr
 
 from .agda_path import escape, unescape, agda2_quote_string, agda2_quote_list
 from .agda_process import AgdaProcess
@@ -64,11 +64,11 @@ def highlight_cmds_from_response(resp: HighlightAddAnnotationsResponse) -> Itera
                                 ann.filepos)
 
 
-def promptUser(prompt: str) -> str:
+def promptUser(prompt: AnyStr) -> str:
     vimapi.inputsave()
     input = vimapi.input(prompt)
     vimapi.inputrestore()
-    return input
+    return input.decode('utf-8')
 
 
 def find_goals_from_current_buffer(goals: List[int]) -> Iterator[AgdaGoal]:
