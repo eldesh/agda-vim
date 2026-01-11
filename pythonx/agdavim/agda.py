@@ -132,8 +132,10 @@ def handle_goal_action(goalList: List[int]):
             # {!       ..       !}
             # ^_ pos_start.col   ^_ pos_end.col
             #                     ^_ goal-number
-            prop_add(pos.row, pos.col           , {'type': 'agdavim:agdaHole', 'id': prop_id.get(), 'end_col': goal.pos_end.col })
-            prop_add(pos.row, goal.pos_end.col+1, {'type': 'agdavim:agdaHoleNumber', 'text': prop[PropertyKey.VIRTUAL_TXT] })
+            col_byte = vimapi.byteidx(vim.current.buffer[pos.row-1], pos.col-1) + 1 # to OBPoint.col
+            end_byte = vimapi.byteidx(vim.current.buffer[pos.row-1], goal.pos_end.col-1) + 1 # to OBPoint.col
+            prop_add(pos.row, col_byte  , {'type': 'agdavim:agdaHole', 'id': prop_id.get(), 'end_col': end_byte })
+            prop_add(pos.row, end_byte+1, {'type': 'agdavim:agdaHoleNumber', 'text': prop[PropertyKey.VIRTUAL_TXT] })
         else:
             logger.error("unexpected goal: %s" % goal)
 
